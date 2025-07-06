@@ -1,8 +1,10 @@
+import styles from '@/styles/navbar.module.css'
+
 const Navbar = () => {
     return (
       <nav>
-        <div className="menu-container">
-            <a></a>
+        <div className={styles.menuContainer}>
+            <a>Hello</a>
             <div></div>
             <ul></ul>
         </div>
