@@ -2,8 +2,8 @@ import styles from '@/styles/navbar.module.css'
 
 const Navbar = () => {
     return (
-      <header>
-        <div>
+      <header className={styles.cssHeader}>
+        <div className={styles.cssNavbarDiv}>
             <div></div>
             <nav></nav>
             <a></a>
