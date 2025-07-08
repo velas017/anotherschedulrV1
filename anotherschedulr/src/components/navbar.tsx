@@ -2,13 +2,13 @@ import styles from '@/styles/navbar.module.css'
 
 const Navbar = () => {
     return (
-      <nav>
-        <div className={styles.menuContainer}>
-            <a>Hello</a>
+      <header>
+        <div>
             <div></div>
-            <ul></ul>
+            <nav></nav>
+            <a></a>
         </div>
-      </nav>
+      </header>
     );
   };
 
