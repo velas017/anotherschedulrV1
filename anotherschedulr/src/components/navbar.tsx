@@ -4,9 +4,15 @@ const Navbar = () => {
     return (
       <header className={styles.cssHeader}>
         <div className={styles.cssNavbarDiv}>
-            <div></div>
-            <nav></nav>
-            <a></a>
+            <div>
+                <a>anotherschedulr</a>
+            </div>
+            <nav>
+                <a>Product</a>
+                <a>Mission</a>
+                <a>Pricing</a>
+            </nav>
+            <a>Sign Up</a>
         </div>
       </header>
     );
