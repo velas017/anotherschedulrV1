@@ -5,14 +5,14 @@ const Navbar = () => {
       <header className={styles.cssHeader}>
         <div className={styles.cssNavbarDiv}>
             <div>
-                <a>anotherschedulr</a>
+                <a className={styles.cssNavText}>anotherschedulr</a>
             </div>
             <nav>
-                <a>Product</a>
-                <a>Mission</a>
-                <a>Pricing</a>
+                <a className={styles.cssNavText}>Product</a>
+                <a className={styles.cssNavText}>Mission</a>
+                <a className={styles.cssNavText}>Pricing</a>
             </nav>
-            <a>Sign Up</a>
+            <a className={styles.cssNavText}>Sign Up</a>
         </div>
       </header>
     );
