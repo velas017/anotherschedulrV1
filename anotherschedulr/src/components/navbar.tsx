@@ -8,7 +8,7 @@ const Navbar = () => {
             <div>
                 <a className={styles.cssNavText}>anotherschedulr</a>
             </div>
-            <nav>
+            <nav className={styles.cssNavLinks}>
                 <a className={styles.cssNavText}>Product</a>
                 <a className={styles.cssNavText}>Mission</a>
                 <a className={styles.cssNavText}>Pricing</a>

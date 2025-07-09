@@ -44,3 +44,12 @@
         flex-direction: row;
         align-items: center;
      }
+
+     .cssNavLinks {
+        position: relative;
+        left: auto;
+        top: auto;
+        margin-top: 0px;
+        display: flex;
+        width: auto;
+    }
