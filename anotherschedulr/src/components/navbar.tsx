@@ -3,7 +3,8 @@ import styles from '@/styles/navbar.module.css'
 const Navbar = () => {
     return (
       <header className={styles.cssHeader}>
-        <div className={styles.cssNavbarDiv}>
+        {/* adding tailwinf with my css class here */}
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${styles.cssNavbarDiv}`}>
             <div>
                 <a className={styles.cssNavText}>anotherschedulr</a>
             </div>
