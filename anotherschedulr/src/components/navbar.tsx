@@ -37,7 +37,7 @@ const Navbar = () => {
 
                     {/* Desktop Sign Up */}
                     <div className="hidden md:flex">
-                        <a href="#" className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-white/90 transition-colors duration-200">
+                        <a href="/signup" className="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-white/90 transition-colors duration-200">
                             Sign Up
                         </a>
                     </div>
@@ -72,7 +72,7 @@ const Navbar = () => {
                                 Pricing
                             </a>
                             <div className="pt-4 border-t border-white/20">
-                                <a href="#" className="block w-full text-center bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-white/90 transition-colors duration-200">
+                                <a href="/signup" className="block w-full text-center bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-white/90 transition-colors duration-200">
                                     Sign Up
                                 </a>
                             </div>
