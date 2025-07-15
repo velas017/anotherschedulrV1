@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import styles from '@/styles/navbar.module.css'
+
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
