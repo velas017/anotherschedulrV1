@@ -1,5 +1,6 @@
 import Footer from "@/components/footer";
 import Navbar from "@/components/navbar";
+import Link from "next/link";
 
 const LandingPage = () => {
     return (
@@ -23,6 +24,9 @@ const LandingPage = () => {
                         <button className="bg-white text-blue-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                             Get started
                         </button>
+                        <Link href="/dashboard" className="bg-blue-800/50 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-blue-800/70 transition-all duration-200 backdrop-blur-sm border border-white/20">
+                            View Dashboard Demo →
+                        </Link>
                         <p className="text-white/70 text-sm">
                             No credit card needed
                         </p>
