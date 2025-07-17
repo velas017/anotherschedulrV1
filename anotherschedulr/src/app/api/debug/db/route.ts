@@ -4,6 +4,14 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET() {
+  // Only allow in development environment
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: "Debug endpoints are not available in production" },
+      { status: 403 }
+    );
+  }
+
   try {
     // Check database contents
     const [users, sessions, accounts] = await Promise.all([

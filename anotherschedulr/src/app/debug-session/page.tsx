@@ -51,11 +51,33 @@ const DebugSessionPage = () => {
       });
   }, []);
 
+  // Check if we're in production
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Debug Page</h1>
+            <div className="bg-red-50 border border-red-200 rounded p-4">
+              <p className="text-red-800">Debug pages are not available in production for security reasons.</p>
+              <p className="text-sm text-red-600 mt-2">This page is only accessible in development mode.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Session Debug Information</h1>
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p className="text-yellow-800 text-sm">
+              <strong>Note:</strong> This debug page is only available in development mode and will be disabled in production.
+            </p>
+          </div>
           
           {/* Status */}
           <div className="mb-6">
