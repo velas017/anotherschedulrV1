@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -22,8 +23,54 @@ import {
 } from "lucide-react";
 
 const DashboardPage = () => {
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Debug logging
+  console.log("🔍 Dashboard - Session status:", status);
+  console.log("🔍 Dashboard - Session data:", session);
+  console.log("🔍 Dashboard - User:", session?.user);
+
+  if (status === "loading") {
+    console.log("🔍 Dashboard - Loading session...");
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated" || !session) {
+    console.log("🔍 Dashboard - No session found, showing access denied");
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">Please sign in to access the dashboard</p>
+          <div className="space-y-3">
+            <Link href="/signin" className="block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              Sign In
+            </Link>
+            <Link href="/signup" className="block bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+              Sign Up
+            </Link>
+            <p className="text-sm text-gray-500 mt-4">
+              Session Status: {status} | Has Session: {session ? "Yes" : "No"}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userDisplayName = session.user?.name || "User";
+  const userEmail = session.user?.email || "";
+
+  console.log("🔍 Dashboard - Rendering dashboard for user:", userDisplayName);
 
   const navigationItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
@@ -143,17 +190,29 @@ const DashboardPage = () => {
           {/* User Profile */}
           <div className="border-t border-gray-200 p-4">
             <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'justify-center'}`}>
-              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-gray-600" />
-              </div>
-              {sidebarOpen && (
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">John Doe</p>
-                  <p className="text-xs text-gray-500">john@example.com</p>
+              {session.user?.image ? (
+                <img 
+                  src={session.user.image} 
+                  alt={userDisplayName}
+                  className="w-10 h-10 rounded-full"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="w-6 h-6 text-gray-600" />
                 </div>
               )}
               {sidebarOpen && (
-                <button className="p-1 rounded hover:bg-gray-100">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{userDisplayName}</p>
+                  <p className="text-xs text-gray-500">{userEmail}</p>
+                </div>
+              )}
+              {sidebarOpen && (
+                <button 
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="p-1 rounded hover:bg-gray-100"
+                  title="Sign out"
+                >
                   <LogOut className="w-4 h-4 text-gray-600" />
                 </button>
               )}
@@ -204,14 +263,26 @@ const DashboardPage = () => {
             {/* User Profile */}
             <div className="border-t border-gray-200 p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-gray-600" />
-                </div>
+                {session.user?.image ? (
+                  <img 
+                    src={session.user.image} 
+                    alt={userDisplayName}
+                    className="w-10 h-10 rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-gray-600" />
+                  </div>
+                )}
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">John Doe</p>
-                  <p className="text-xs text-gray-500">john@example.com</p>
+                  <p className="text-sm font-medium text-gray-900">{userDisplayName}</p>
+                  <p className="text-xs text-gray-500">{userEmail}</p>
                 </div>
-                <button className="p-1 rounded hover:bg-gray-100">
+                <button 
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="p-1 rounded hover:bg-gray-100"
+                  title="Sign out"
+                >
                   <LogOut className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
@@ -234,7 +305,7 @@ const DashboardPage = () => {
                   <Menu className="w-5 h-5 text-gray-600" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">Welcome back, John!</h1>
+                  <h1 className="text-2xl font-semibold text-gray-900">Welcome back, {userDisplayName}!</h1>
                   <p className="text-sm text-gray-500 mt-1">Here's what's happening with your business today.</p>
                 </div>
               </div>
@@ -257,9 +328,17 @@ const DashboardPage = () => {
                 </button>
                 
                 {/* User Avatar */}
-                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-gray-600" />
-                </div>
+                {session.user?.image ? (
+                  <img 
+                    src={session.user.image} 
+                    alt={userDisplayName}
+                    className="w-10 h-10 rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-gray-600" />
+                  </div>
+                )}
               </div>
             </div>
           </div>

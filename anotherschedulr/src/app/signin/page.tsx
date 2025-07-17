@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-const SignupPage = () => {
-  const [name, setName] = useState("");
+const SigninPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -19,37 +17,17 @@ const SignupPage = () => {
     setLoading(true);
     setError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      if (response.ok) {
-        // Auto sign in after successful registration
-        const result = await signIn("credentials", {
-          email,
-          password,
-          redirect: false,
-        });
-
-        if (result?.error) {
-          setError("Registration successful but auto-login failed");
-        } else {
-          router.push("/dashboard");
-        }
+      if (result?.error) {
+        setError("Invalid credentials");
       } else {
-        const data = await response.json();
-        setError(data.error || "Registration failed");
+        router.push("/dashboard");
       }
     } catch (error) {
       setError("Something went wrong");
@@ -58,12 +36,12 @@ const SignupPage = () => {
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleSignin = async () => {
     setLoading(true);
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      setError("Google sign up failed");
+      setError("Google sign in failed");
       setLoading(false);
     }
   };
@@ -76,7 +54,7 @@ const SignupPage = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Signup Card */}
+      {/* Signin Card */}
       <div className="w-full max-w-md relative">
         <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/20">
           {/* Logo */}
@@ -88,8 +66,8 @@ const SignupPage = () => {
 
           {/* Title */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-white mb-2">Create your account</h2>
-            <p className="text-white/80">Start scheduling smarter today</p>
+            <h2 className="text-2xl font-semibold text-white mb-2">Welcome back</h2>
+            <p className="text-white/80">Sign in to your account</p>
           </div>
 
           {/* Error Message */}
@@ -99,9 +77,9 @@ const SignupPage = () => {
             </div>
           )}
 
-          {/* Google Sign Up Button */}
+          {/* Google Sign In Button */}
           <button
-            onClick={handleGoogleSignup}
+            onClick={handleGoogleSignin}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200 mb-6 disabled:opacity-50"
           >
@@ -111,7 +89,7 @@ const SignupPage = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            {loading ? "Creating account..." : "Continue with Google"}
+            {loading ? "Signing in..." : "Continue with Google"}
           </button>
 
           {/* Divider */}
@@ -124,23 +102,8 @@ const SignupPage = () => {
             </div>
           </div>
 
-          {/* Email Signup Form */}
+          {/* Email Signin Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white/80 mb-1">
-                Full name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent backdrop-blur-sm"
-                placeholder="John Doe"
-                required
-              />
-            </div>
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1">
                 Email address
@@ -166,22 +129,7 @@ const SignupPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent backdrop-blur-sm"
-                placeholder="Create a password"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-1">
-                Confirm password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent backdrop-blur-sm"
-                placeholder="Confirm your password"
+                placeholder="Enter your password"
                 required
               />
             </div>
@@ -191,29 +139,16 @@ const SignupPage = () => {
               disabled={loading}
               className="w-full bg-white text-blue-600 py-3 px-4 rounded-lg font-semibold hover:bg-white/90 transition-colors duration-200 shadow-lg disabled:opacity-50"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
-          {/* Sign in link */}
+          {/* Sign up link */}
           <p className="text-center text-white/80 text-sm mt-6">
-            Already have an account?{" "}
-            <Link href="/signin" className="text-white font-medium underline hover:no-underline">
-              Sign in
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-white font-medium underline hover:no-underline">
+              Sign up
             </Link>
-          </p>
-        </div>
-
-        {/* Benefits */}
-        <div className="mt-8 text-center space-y-2">
-          <p className="text-white/80 text-sm flex items-center justify-center gap-2">
-            <span className="text-green-400">✓</span> Free 14-day trial
-          </p>
-          <p className="text-white/80 text-sm flex items-center justify-center gap-2">
-            <span className="text-green-400">✓</span> No credit card required
-          </p>
-          <p className="text-white/80 text-sm flex items-center justify-center gap-2">
-            <span className="text-green-400">✓</span> Cancel anytime
           </p>
         </div>
       </div>
@@ -221,4 +156,4 @@ const SignupPage = () => {
   );
 };
 
-export default SignupPage;
+export default SigninPage;
