@@ -1,40 +1,21 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/dashboardLayout';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Plus, 
   Search, 
-  Calendar as CalendarIcon,
-  Users,
-  FileText,
-  BarChart3,
-  Settings,
-  Home,
   Clock,
   ChevronDown,
   Printer
 } from 'lucide-react';
 
 const CalendarPage = () => {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState('week');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Redirect to signin if not authenticated
-  if (status === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!session) {
-    router.push('/signin');
-    return null;
-  }
 
   // Time slots for the day view
   const timeSlots = [
@@ -117,93 +98,14 @@ const CalendarPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-gray-900">anotherschedulr</h1>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-              Overview
-            </div>
-            
-            <a href="/calendar" className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">
-              <CalendarIcon className="mr-3 h-5 w-5" />
-              Calendar
-            </a>
-            
-            <a href="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <Home className="mr-3 h-5 w-5" />
-              Dashboard
-            </a>
-
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <FileText className="mr-3 h-5 w-5" />
-              Scheduling Page
-            </a>
-            
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <Users className="mr-3 h-5 w-5" />
-              Clients
-            </a>
-            
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <FileText className="mr-3 h-5 w-5" />
-              Invoices
-            </a>
-            
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <BarChart3 className="mr-3 h-5 w-5" />
-              Reports
-            </a>
-
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mt-6 mb-3">
-              Business Settings
-            </div>
-            
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-              <Settings className="mr-3 h-5 w-5" />
-              Settings
-            </a>
-          </div>
-        </nav>
-
-        {/* User Info */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-xs font-medium text-white">
-                {session.user?.name?.charAt(0) || session.user?.email?.charAt(0)}
-              </span>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">{session.user?.name || session.user?.email}</p>
-              <p className="text-xs text-gray-500">Admin</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
+    <DashboardLayout
+      title={formatCurrentWeek()}
+      subtitle={`${appointments.length} appointments${isCurrentWeek() ? ' • current week' : ''}`}
+    >
+      <div className="flex flex-col h-full">
+        {/* Calendar Controls Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-semibold text-gray-900 mr-4">
-                {formatCurrentWeek()}
-              </h1>
-              {isCurrentWeek() && (
-                <span className="text-sm text-gray-500">current week</span>
-              )}
-              <span className="ml-4 text-sm text-gray-500">{appointments.length} appointments</span>
-            </div>
-            
             <div className="flex items-center space-x-4">
               <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
                 <Clock className="mr-2 h-4 w-4" />
@@ -292,83 +194,85 @@ const CalendarPage = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="flex-1 bg-white">
-          <div className="grid grid-cols-8 border-b border-gray-200">
-            {/* Empty cell for time column */}
-            <div className="border-r border-gray-200 bg-gray-50 p-3"></div>
-            
-            {/* Day headers */}
-            {weekDates.map((day, index) => (
-              <div 
-                key={index} 
-                className={`border-r border-gray-200 p-3 text-center ${
-                  day.isToday ? 'bg-blue-50' : 'bg-gray-50'
-                }`}
-              >
-                <div className={`text-sm font-medium ${
-                  day.isToday ? 'text-blue-600' : 'text-gray-900'
-                }`}>
-                  {day.dayNameShort}
-                </div>
-                <div className={`text-sm ${
-                  day.isToday 
-                    ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
-                    : 'text-gray-500'
-                }`}>
-                  {day.dayNumber}
-                </div>
-                {day.isToday && (
-                  <div className="text-xs text-blue-600 mt-1">Today</div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Time slots and appointment grid */}
-          <div className="overflow-y-auto" style={{ height: 'calc(100vh - 280px)' }}>
-            {timeSlots.map((time, timeIndex) => (
-              <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '80px' }}>
-                {/* Time label */}
-                <div className="border-r border-gray-200 bg-gray-50 p-3 text-right">
-                  <span className="text-sm text-gray-600">{time}</span>
-                </div>
-                
-                {/* Day columns */}
-                {weekDates.map((day, dayIndex) => (
-                  <div 
-                    key={dayIndex} 
-                    className={`border-r border-gray-100 relative p-2 ${
-                      day.isToday ? 'bg-blue-50/30' : ''
-                    }`}
-                  >
-                    {/* Render appointment if it matches this day and time */}
-                    {appointments.map((appointment) => (
-                      appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
-                        <div 
-                          key={appointment.id}
-                          className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
-                          style={{ minHeight: '120px' }}
-                        >
-                          <div className="font-medium text-gray-900 mb-1">
-                            {appointment.client}: {appointment.service}
-                          </div>
-                          <div className="text-gray-700 mb-1">
-                            {appointment.treatment}
-                          </div>
-                          <div className="text-gray-600">
-                            {appointment.time}
-                          </div>
-                        </div>
-                      )
-                    ))}
+        <div className="flex-1 bg-white overflow-hidden">
+          <div className="h-full flex flex-col">
+            <div className="grid grid-cols-8 border-b border-gray-200">
+              {/* Empty cell for time column */}
+              <div className="border-r border-gray-200 bg-gray-50 p-3"></div>
+              
+              {/* Day headers */}
+              {weekDates.map((day, index) => (
+                <div 
+                  key={index} 
+                  className={`border-r border-gray-200 p-3 text-center ${
+                    day.isToday ? 'bg-blue-50' : 'bg-gray-50'
+                  }`}
+                >
+                  <div className={`text-sm font-medium ${
+                    day.isToday ? 'text-blue-600' : 'text-gray-900'
+                  }`}>
+                    {day.dayNameShort}
                   </div>
-                ))}
-              </div>
-            ))}
+                  <div className={`text-sm ${
+                    day.isToday 
+                      ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
+                      : 'text-gray-500'
+                  }`}>
+                    {day.dayNumber}
+                  </div>
+                  {day.isToday && (
+                    <div className="text-xs text-blue-600 mt-1">Today</div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Time slots and appointment grid */}
+            <div className="flex-1 overflow-y-auto">
+              {timeSlots.map((time, timeIndex) => (
+                <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '80px' }}>
+                  {/* Time label */}
+                  <div className="border-r border-gray-200 bg-gray-50 p-3 text-right">
+                    <span className="text-sm text-gray-600">{time}</span>
+                  </div>
+                  
+                  {/* Day columns */}
+                  {weekDates.map((day, dayIndex) => (
+                    <div 
+                      key={dayIndex} 
+                      className={`border-r border-gray-100 relative p-2 ${
+                        day.isToday ? 'bg-blue-50/30' : ''
+                      }`}
+                    >
+                      {/* Render appointment if it matches this day and time */}
+                      {appointments.map((appointment) => (
+                        appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
+                          <div 
+                            key={appointment.id}
+                            className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
+                            style={{ minHeight: '120px' }}
+                          >
+                            <div className="font-medium text-gray-900 mb-1">
+                              {appointment.client}: {appointment.service}
+                            </div>
+                            <div className="text-gray-700 mb-1">
+                              {appointment.treatment}
+                            </div>
+                            <div className="text-gray-600">
+                              {appointment.time}
+                            </div>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
