@@ -75,7 +75,7 @@ const DashboardPage = () => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
     { name: "Appointments", href: "/dashboard/appointments", icon: Calendar, active: false },
     { name: "Clients", href: "/dashboard/clients", icon: Users, active: false },
-    { name: "Calendar", href: "/dashboard/calendar", icon: CalendarDays, active: false },
+    { name: "Calendar", href: "/calendar", icon: CalendarDays, active: false },
     { name: "Services", href: "/dashboard/services", icon: FileText, active: false },
     { name: "Reports", href: "/dashboard/reports", icon: FileText, active: false },
     { name: "Settings", href: "/dashboard/settings", icon: Settings, active: false },
