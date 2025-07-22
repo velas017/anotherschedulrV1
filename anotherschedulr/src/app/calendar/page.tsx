@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/dashboardLayout';
 import NewAppointmentPanel from '@/components/newAppointmentPanel';
+import BlockOffTimePanel from '@/components/blockOffTimePanel';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -20,6 +21,7 @@ const CalendarPage = () => {
   const [viewType, setViewType] = useState<'week' | 'month' | 'day'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAppointmentPanelOpen, setIsAppointmentPanelOpen] = useState(false);
+  const [isBlockOffTimePanelOpen, setIsBlockOffTimePanelOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -180,7 +182,10 @@ const CalendarPage = () => {
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+              <button 
+                onClick={() => setIsBlockOffTimePanelOpen(true)}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
                 <Clock className="mr-2 h-4 w-4" />
                 BLOCK OFF TIME
               </button>
@@ -522,6 +527,12 @@ const CalendarPage = () => {
       <NewAppointmentPanel 
         isOpen={isAppointmentPanelOpen}
         onClose={() => setIsAppointmentPanelOpen(false)}
+      />
+
+      {/* Block Off Time Panel */}
+      <BlockOffTimePanel 
+        isOpen={isBlockOffTimePanelOpen}
+        onClose={() => setIsBlockOffTimePanelOpen(false)}
       />
     </DashboardLayout>
   );

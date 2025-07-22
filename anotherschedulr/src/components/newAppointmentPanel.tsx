@@ -34,14 +34,6 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
 
   return (
     <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-30 z-40 transition-opacity duration-300"
-          onClick={onClose}
-        />
-      )}
-
       {/* Slide-out Panel */}
       <div 
         className={`fixed right-0 top-0 h-full w-[480px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${

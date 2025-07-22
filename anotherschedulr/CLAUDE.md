@@ -66,6 +66,54 @@ Required in `.env.local`:
 - Relations: User -> Clients, Services, Appointments
 - All queries should include `where: { userId: session.user.id }`
 
+## Accessibility Requirements: WCAG 2.2 Compliance
+
+**CRITICAL**: This application must meet WCAG 2.2 Level AA accessibility guidelines. All new components and features must follow these standards:
+
+### Semantic HTML & Structure
+- Use proper HTML5 semantic elements (`<main>`, `<nav>`, `<section>`, `<header>`, etc.)
+- Maintain logical heading hierarchy (h1 → h2 → h3)
+- Use lists (`<ul>`, `<ol>`) for grouped content
+- Ensure proper form labeling with `<label>` elements
+
+### Keyboard Navigation
+- All interactive elements must be keyboard accessible
+- Implement proper focus management and visible focus indicators
+- Support tab navigation with logical tab order
+- Provide skip links for main content areas
+- Handle modal/panel focus trapping
+
+### ARIA Attributes
+- Use appropriate ARIA roles, states, and properties
+- Implement `aria-label`, `aria-labelledby`, and `aria-describedby` where needed
+- Use `aria-expanded`, `aria-selected` for interactive components
+- Provide live regions (`aria-live`) for dynamic content updates
+
+### Color & Contrast
+- Maintain minimum 4.5:1 contrast ratio for normal text
+- Maintain minimum 3:1 contrast ratio for large text and UI components
+- Never rely solely on color to convey information
+- Support both light and dark themes with proper contrast
+
+### Responsive Design
+- Support zoom up to 400% without horizontal scrolling
+- Ensure touch targets are minimum 44×44 pixels
+- Design works across mobile, tablet, and desktop
+- Support both portrait and landscape orientations
+
+### Component-Specific Guidelines
+- **Forms**: Proper labels, error messages, and validation feedback
+- **Modals/Panels**: Focus trapping, escape key handling, return focus
+- **Calendars**: Keyboard navigation, proper date announcements
+- **Tables**: Header associations, sorting announcements
+- **Buttons**: Clear purpose, loading states, disabled states
+
+### Testing Requirements
+- Test with screen readers (VoiceOver, NVDA, JAWS)
+- Verify keyboard-only navigation
+- Check color contrast ratios
+- Validate with automated tools (axe-core, Lighthouse)
+
 ## Development Notes
 
 - No test framework is currently set up
@@ -74,3 +122,4 @@ Required in `.env.local`:
 - Protected routes require session - check with `useSession()` hook
 - API routes use standard Next.js Request/Response objects
 - ALWAYS verify tenant isolation in new features
+- ALWAYS test accessibility compliance before implementation
