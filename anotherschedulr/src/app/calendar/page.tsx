@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/dashboardLayout';
 import NewAppointmentPanel from '@/components/newAppointmentPanel';
 import { 
@@ -10,14 +10,35 @@ import {
   Search, 
   Clock,
   ChevronDown,
-  Printer
+  Printer,
+  Calendar,
+  CalendarDays
 } from 'lucide-react';
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewType, setViewType] = useState('week');
+  const [viewType, setViewType] = useState<'week' | 'month' | 'day'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAppointmentPanelOpen, setIsAppointmentPanelOpen] = useState(false);
+  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsViewDropdownOpen(false);
+      }
+    };
+
+    if (isViewDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isViewDropdownOpen]);
 
   // Time slots for the day view
   const timeSlots = [
@@ -59,6 +80,43 @@ const CalendarPage = () => {
            date.getFullYear() === today.getFullYear();
   };
 
+  // Get dates for the current month
+  const getMonthDates = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const dates = [];
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      dates.push(null);
+    }
+    
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(year, month, day);
+      dates.push({
+        date: currentDate,
+        day: day,
+        isToday: isToday(currentDate),
+        isCurrentMonth: true
+      });
+    }
+    
+    // Fill remaining cells to complete the grid
+    const totalCells = Math.ceil(dates.length / 7) * 7;
+    const remainingCells = totalCells - dates.length;
+    for (let i = 1; i <= remainingCells; i++) {
+      dates.push(null);
+    }
+    
+    return dates;
+  };
+
   // Check if current week is being viewed
   const isCurrentWeek = () => {
     const today = new Date();
@@ -85,13 +143,26 @@ const CalendarPage = () => {
     }
   ];
 
-  const formatCurrentWeek = () => {
-    const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-    const month = weekStart.toLocaleDateString('en-US', { month: 'long' });
-    const day = weekStart.getDate();
-    const year = weekStart.getFullYear();
-    return `Week of ${month} ${day}, ${year}`;
+  const formatCurrentPeriod = () => {
+    if (viewType === 'week') {
+      const weekStart = new Date(currentDate);
+      weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+      const month = weekStart.toLocaleDateString('en-US', { month: 'long' });
+      const day = weekStart.getDate();
+      const year = weekStart.getFullYear();
+      return `Week of ${month} ${day}, ${year}`;
+    } else if (viewType === 'month') {
+      const month = currentDate.toLocaleDateString('en-US', { month: 'long' });
+      const year = currentDate.getFullYear();
+      return `${month} ${year}`;
+    } else if (viewType === 'day') {
+      const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const month = currentDate.toLocaleDateString('en-US', { month: 'long' });
+      const day = currentDate.getDate();
+      const year = currentDate.getFullYear();
+      return `${dayName}, ${month} ${day}, ${year}`;
+    }
+    return '';
   };
 
   // Go to today's date
@@ -101,8 +172,8 @@ const CalendarPage = () => {
 
   return (
     <DashboardLayout
-      title={formatCurrentWeek()}
-      subtitle={`${appointments.length} appointments${isCurrentWeek() ? ' • current week' : ''}`}
+      title={formatCurrentPeriod()}
+      subtitle={`${appointments.length} appointments${viewType === 'week' && isCurrentWeek() ? ' • current week' : ''}`}
     >
       <div className="flex flex-col h-full">
         {/* Calendar Controls Header */}
@@ -134,7 +205,13 @@ const CalendarPage = () => {
                 <button 
                   onClick={() => {
                     const newDate = new Date(currentDate);
-                    newDate.setDate(currentDate.getDate() - 7);
+                    if (viewType === 'week') {
+                      newDate.setDate(currentDate.getDate() - 7);
+                    } else if (viewType === 'month') {
+                      newDate.setMonth(currentDate.getMonth() - 1);
+                    } else if (viewType === 'day') {
+                      newDate.setDate(currentDate.getDate() - 1);
+                    }
                     setCurrentDate(newDate);
                   }}
                   className="p-1 hover:bg-gray-100 rounded"
@@ -152,7 +229,13 @@ const CalendarPage = () => {
                 <button 
                   onClick={() => {
                     const newDate = new Date(currentDate);
-                    newDate.setDate(currentDate.getDate() + 7);
+                    if (viewType === 'week') {
+                      newDate.setDate(currentDate.getDate() + 7);
+                    } else if (viewType === 'month') {
+                      newDate.setMonth(currentDate.getMonth() + 1);
+                    } else if (viewType === 'day') {
+                      newDate.setDate(currentDate.getDate() + 1);
+                    }
                     setCurrentDate(newDate);
                   }}
                   className="p-1 hover:bg-gray-100 rounded"
@@ -162,10 +245,52 @@ const CalendarPage = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border">
-                  Week View
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </button>
+                <div ref={dropdownRef} className="relative">
+                  <button 
+                    onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
+                    className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border"
+                  >
+                    {viewType === 'week' && 'Week View'}
+                    {viewType === 'month' && 'Month View'}
+                    {viewType === 'day' && 'Day View'}
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                  </button>
+                  
+                  {isViewDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <button
+                        onClick={() => {
+                          setViewType('day');
+                          setIsViewDropdownOpen(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Day View
+                      </button>
+                      <button
+                        onClick={() => {
+                          setViewType('week');
+                          setIsViewDropdownOpen(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        Week View
+                      </button>
+                      <button
+                        onClick={() => {
+                          setViewType('month');
+                          setIsViewDropdownOpen(false);
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Month View
+                      </button>
+                    </div>
+                  )}
+                </div>
                 
                 <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border">
                   All calendars
@@ -200,62 +325,122 @@ const CalendarPage = () => {
 
         {/* Calendar Grid */}
         <div className="flex-1 bg-white overflow-hidden">
-          <div className="h-full flex flex-col">
-            <div className="grid grid-cols-8 border-b border-gray-200">
-              {/* Empty cell for time column */}
-              <div className="border-r border-gray-200 bg-gray-50 p-3"></div>
-              
-              {/* Day headers */}
-              {weekDates.map((day, index) => (
-                <div 
-                  key={index} 
-                  className={`border-r border-gray-200 p-3 text-center ${
-                    day.isToday ? 'bg-blue-50' : 'bg-gray-50'
-                  }`}
-                >
-                  <div className={`text-sm font-medium ${
-                    day.isToday ? 'text-blue-600' : 'text-gray-900'
-                  }`}>
-                    {day.dayNameShort}
+          {viewType === 'week' && (
+            <div className="h-full flex flex-col">
+              <div className="grid grid-cols-8 border-b border-gray-200">
+                {/* Empty cell for time column */}
+                <div className="border-r border-gray-200 bg-gray-50 p-3"></div>
+                
+                {/* Day headers */}
+                {weekDates.map((day, index) => (
+                  <div 
+                    key={index} 
+                    className={`border-r border-gray-200 p-3 text-center ${
+                      day.isToday ? 'bg-blue-50' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className={`text-sm font-medium ${
+                      day.isToday ? 'text-blue-600' : 'text-gray-900'
+                    }`}>
+                      {day.dayNameShort}
+                    </div>
+                    <div className={`text-sm ${
+                      day.isToday 
+                        ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
+                        : 'text-gray-500'
+                    }`}>
+                      {day.dayNumber}
+                    </div>
+                    {day.isToday && (
+                      <div className="text-xs text-blue-600 mt-1">Today</div>
+                    )}
                   </div>
-                  <div className={`text-sm ${
-                    day.isToday 
-                      ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
-                      : 'text-gray-500'
-                  }`}>
-                    {day.dayNumber}
-                  </div>
-                  {day.isToday && (
-                    <div className="text-xs text-blue-600 mt-1">Today</div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Time slots and appointment grid */}
-            <div className="flex-1 overflow-y-auto">
-              {timeSlots.map((time, timeIndex) => (
-                <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '80px' }}>
-                  {/* Time label */}
-                  <div className="border-r border-gray-200 bg-gray-50 p-3 text-right">
-                    <span className="text-sm text-gray-600">{time}</span>
+              {/* Time slots and appointment grid */}
+              <div className="flex-1 overflow-y-auto">
+                {timeSlots.map((time, timeIndex) => (
+                  <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '80px' }}>
+                    {/* Time label */}
+                    <div className="border-r border-gray-200 bg-gray-50 p-3 text-right">
+                      <span className="text-sm text-gray-600">{time}</span>
+                    </div>
+                    
+                    {/* Day columns */}
+                    {weekDates.map((day, dayIndex) => (
+                      <div 
+                        key={dayIndex} 
+                        className={`border-r border-gray-100 relative p-2 ${
+                          day.isToday ? 'bg-blue-50/30' : ''
+                        }`}
+                      >
+                        {/* Render appointment if it matches this day and time */}
+                        {appointments.map((appointment) => (
+                          appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
+                            <div 
+                              key={appointment.id}
+                              className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
+                              style={{ minHeight: '120px' }}
+                            >
+                              <div className="font-medium text-gray-900 mb-1">
+                                {appointment.client}: {appointment.service}
+                              </div>
+                              <div className="text-gray-700 mb-1">
+                                {appointment.treatment}
+                              </div>
+                              <div className="text-gray-600">
+                                {appointment.time}
+                              </div>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    ))}
                   </div>
-                  
-                  {/* Day columns */}
-                  {weekDates.map((day, dayIndex) => (
-                    <div 
-                      key={dayIndex} 
-                      className={`border-r border-gray-100 relative p-2 ${
-                        day.isToday ? 'bg-blue-50/30' : ''
-                      }`}
-                    >
-                      {/* Render appointment if it matches this day and time */}
-                      {appointments.map((appointment) => (
-                        appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
+                ))}
+              </div>
+            </div>
+          )}
+
+          {viewType === 'day' && (
+            <div className="h-full flex flex-col">
+              <div className="border-b border-gray-200 bg-gray-50 p-4 text-center">
+                <div className={`text-lg font-medium ${isToday(currentDate) ? 'text-blue-600' : 'text-gray-900'}`}>
+                  {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+                </div>
+                <div className={`text-2xl font-bold ${
+                  isToday(currentDate) 
+                    ? 'text-blue-600' 
+                    : 'text-gray-900'
+                }`}>
+                  {currentDate.getDate()}
+                </div>
+                {isToday(currentDate) && (
+                  <div className="text-sm text-blue-600">Today</div>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {timeSlots.map((time, timeIndex) => (
+                  <div key={timeIndex} className="flex border-b border-gray-100" style={{ minHeight: '80px' }}>
+                    <div className="w-24 border-r border-gray-200 bg-gray-50 p-3 text-right">
+                      <span className="text-sm text-gray-600">{time}</span>
+                    </div>
+                    <div className="flex-1 p-2 relative">
+                      {/* Render appointments for the current day */}
+                      {appointments.map((appointment) => {
+                        const appointmentDate = new Date(currentDate);
+                        appointmentDate.setDate(currentDate.getDate() - currentDate.getDay() + appointment.dayIndex);
+                        const isSameDay = appointmentDate.getDate() === currentDate.getDate() && 
+                                        appointmentDate.getMonth() === currentDate.getMonth() &&
+                                        appointmentDate.getFullYear() === currentDate.getFullYear();
+                        
+                        return isSameDay && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
                           <div 
                             key={appointment.id}
-                            className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
-                            style={{ minHeight: '120px' }}
+                            className={`${appointment.color} p-3 rounded-lg text-sm relative z-10 border w-full`}
+                            style={{ minHeight: '100px' }}
                           >
                             <div className="font-medium text-gray-900 mb-1">
                               {appointment.client}: {appointment.service}
@@ -267,14 +452,69 @@ const CalendarPage = () => {
                               {appointment.time}
                             </div>
                           </div>
-                        )
-                      ))}
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {viewType === 'month' && (
+            <div className="h-full flex flex-col">
+              <div className="grid grid-cols-7 border-b border-gray-200">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                  <div key={day} className="border-r border-gray-200 bg-gray-50 p-3 text-center">
+                    <div className="text-sm font-medium text-gray-900">{day}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-7 h-full">
+                  {getMonthDates(currentDate).map((dateInfo, index) => (
+                    <div 
+                      key={index} 
+                      className={`border-r border-b border-gray-200 p-2 ${
+                        dateInfo && dateInfo.isToday ? 'bg-blue-50' : ''
+                      } ${!dateInfo ? 'bg-gray-50' : ''}`}
+                      style={{ minHeight: '100px' }}
+                    >
+                      {dateInfo && (
+                        <>
+                          <div className={`text-sm font-medium mb-1 ${
+                            dateInfo.isToday 
+                              ? 'bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center' 
+                              : 'text-gray-900'
+                          }`}>
+                            {dateInfo.day}
+                          </div>
+                          <div className="space-y-1">
+                            {/* Count appointments for this day */}
+                            {(() => {
+                              const dayAppointments = appointments.filter(appointment => {
+                                const appointmentDate = new Date(currentDate);
+                                appointmentDate.setDate(currentDate.getDate() - currentDate.getDay() + appointment.dayIndex);
+                                return appointmentDate.getDate() === dateInfo.day &&
+                                       appointmentDate.getMonth() === currentDate.getMonth();
+                              });
+                              
+                              return dayAppointments.length > 0 && (
+                                <div className="text-xs text-gray-600 bg-gray-100 rounded px-1 py-0.5">
+                                  {dayAppointments.length} appointment{dayAppointments.length > 1 ? 's' : ''}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 const prisma = new PrismaClient();
 
@@ -12,10 +14,22 @@ export async function GET() {
     );
   }
 
+  // Check authentication
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "Unauthorized - must be logged in to access debug information" },
+      { status: 401 }
+    );
+  }
+
+  const userId = session.user.id;
+
   try {
-    // Check database contents
-    const [users, sessions, accounts] = await Promise.all([
+    // Check database contents - ONLY for the current user
+    const [users, sessions, accounts, clients, services, appointments] = await Promise.all([
       prisma.user.findMany({
+        where: { id: userId }, // Only current user
         select: {
           id: true,
           email: true,
@@ -26,11 +40,15 @@ export async function GET() {
             select: {
               sessions: true,
               accounts: true,
+              clients: true,
+              services: true,
+              appointments: true,
             }
           }
         }
       }),
       prisma.session.findMany({
+        where: { userId: userId }, // Only current user's sessions
         select: {
           id: true,
           sessionToken: true,
@@ -45,6 +63,7 @@ export async function GET() {
         }
       }),
       prisma.account.findMany({
+        where: { userId: userId }, // Only current user's accounts
         select: {
           id: true,
           provider: true,
@@ -57,26 +76,39 @@ export async function GET() {
             }
           }
         }
+      }),
+      prisma.client.count({
+        where: { userId: userId } // Count of user's clients
+      }),
+      prisma.service.count({
+        where: { userId: userId } // Count of user's services
+      }),
+      prisma.appointment.count({
+        where: { userId: userId } // Count of user's appointments
       })
     ]);
 
     const stats = {
-      totalUsers: users.length,
+      currentUser: users[0]?.email || "Unknown",
       totalSessions: sessions.length,
       totalAccounts: accounts.length,
       activeSessions: sessions.filter(s => new Date(s.expires) > new Date()).length,
       expiredSessions: sessions.filter(s => new Date(s.expires) <= new Date()).length,
+      totalClients: clients,
+      totalServices: services,
+      totalAppointments: appointments,
     };
 
     return NextResponse.json({
-      status: "✅ Database accessible",
+      status: "✅ Database accessible - Tenant-isolated view",
       timestamp: new Date().toISOString(),
+      authenticatedAs: session.user.email,
       stats,
       data: {
-        users: users.map(user => ({
+        user: users.map(user => ({
           ...user,
           createdAt: user.createdAt.toISOString(),
-        })),
+        }))[0], // Single user object
         sessions: sessions.map(session => ({
           ...session,
           expires: session.expires.toISOString(),
@@ -84,10 +116,17 @@ export async function GET() {
         })),
         accounts,
       },
+      businessData: {
+        clients: clients,
+        services: services,
+        appointments: appointments,
+      },
       recommendations: [
-        users.length === 0 ? "No users found - OAuth might not be creating users" : "✅ Users exist",
-        sessions.length === 0 ? "No sessions found - sessions might not be persisting" : "✅ Sessions exist",
-        accounts.length === 0 ? "No accounts found - OAuth accounts might not be linking" : "✅ OAuth accounts exist",
+        sessions.length === 0 ? "⚠️ No active sessions - you may need to sign in again" : "✅ Active sessions found",
+        accounts.length === 0 ? "⚠️ No linked accounts - consider adding OAuth for easier login" : "✅ OAuth accounts linked",
+        clients === 0 ? "💡 No clients yet - start adding your customers" : `✅ ${clients} clients registered`,
+        services === 0 ? "💡 No services defined - add services you offer" : `✅ ${services} services available`,
+        appointments === 0 ? "💡 No appointments scheduled" : `✅ ${appointments} appointments in system`,
       ]
     });
   } catch (error) {
