@@ -16,7 +16,12 @@ import {
   X,
   LogOut,
   User,
-  Clock
+  Clock,
+  CalendarCheck,
+  ClipboardList,
+  Mail,
+  MessageSquare,
+  Bell
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -41,14 +46,23 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const userDisplayName = session?.user?.name || session?.user?.email || "User";
   const userEmail = session?.user?.email || "";
 
-  const navigationItems: NavigationItem[] = [
+  const overviewItems: NavigationItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },
-    { name: "Appointments", href: "/dashboard/appointments", icon: Clock },
+    { name: "Scheduling Page", href: "/dashboard/scheduling", icon: Calendar },
     { name: "Clients", href: "/dashboard/clients", icon: Users },
-    { name: "Services", href: "/dashboard/services", icon: FileText },
-    { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  ];
+
+  const notificationItems: NavigationItem[] = [
+    { name: "Client Email", href: "/dashboard/notifications/email", icon: Mail },
+    { name: "Client Text Messages", href: "/dashboard/notifications/text", icon: MessageSquare },
+    { name: "Booking Alerts", href: "/dashboard/notifications/alerts", icon: Bell },
+  ];
+
+  const businessSettingsItems: NavigationItem[] = [
+    { name: "Availability Page", href: "/dashboard/availability", icon: CalendarCheck },
+    { name: "Appointment Types", href: "/dashboard/appointment-types", icon: Clock },
+    { name: "Intake Form Questions", href: "/dashboard/intake-forms", icon: ClipboardList },
   ];
 
   const isActive = (href: string) => {
@@ -83,7 +97,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           Overview
         </div>
         
-        {navigationItems.slice(0, 2).map((item) => {
+        {overviewItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           
@@ -104,10 +118,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         })}
 
         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mt-6 mb-3">
-          Manage
+          Notifications
         </div>
 
-        {navigationItems.slice(2, -1).map((item) => {
+        {notificationItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           
@@ -131,7 +145,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           Business Settings
         </div>
 
-        {navigationItems.slice(-1).map((item) => {
+        {businessSettingsItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
           
