@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboardLayout';
+import NewAppointmentPanel from '@/components/newAppointmentPanel';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -16,6 +17,7 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState('week');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAppointmentPanelOpen, setIsAppointmentPanelOpen] = useState(false);
 
   // Time slots for the day view
   const timeSlots = [
@@ -112,7 +114,10 @@ const CalendarPage = () => {
                 BLOCK OFF TIME
               </button>
               
-              <button className="flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800">
+              <button 
+                onClick={() => setIsAppointmentPanelOpen(true)}
+                className="flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 ADD NEW
                 <ChevronDown className="ml-2 h-4 w-4" />
@@ -272,6 +277,12 @@ const CalendarPage = () => {
           </div>
         </div>
       </div>
+
+      {/* New Appointment Panel */}
+      <NewAppointmentPanel 
+        isOpen={isAppointmentPanelOpen}
+        onClose={() => setIsAppointmentPanelOpen(false)}
+      />
     </DashboardLayout>
   );
 };
