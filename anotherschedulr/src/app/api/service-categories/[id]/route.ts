@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
@@ -55,8 +53,6 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating service category:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -83,10 +79,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    // Remove category from services before deleting
+    // Remove category from services before deleting (only for current user's services)
     await prisma.service.updateMany({
       where: {
-        categoryId: params.id
+        categoryId: params.id,
+        userId: session.user.id
       },
       data: {
         categoryId: null
@@ -103,7 +100,5 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting service category:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

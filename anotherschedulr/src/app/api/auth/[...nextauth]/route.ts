@@ -3,11 +3,9 @@ import NextAuth from "next-auth/next"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { Adapter } from "next-auth/adapters"
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // Validate environment variables
 function validateEnvironmentVariables() {
@@ -44,7 +42,7 @@ function validateEnvironmentVariables() {
 // Test database connection
 async function testDatabaseConnection() {
   try {
-    await prisma.$connect()
+    await prisma.$queryRaw`SELECT 1`
     console.log("✅ Database connected successfully")
   } catch (error) {
     console.error("❌ Database connection failed:", error)

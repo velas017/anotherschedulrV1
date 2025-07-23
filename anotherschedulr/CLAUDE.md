@@ -245,3 +245,43 @@ Required in `.env.local`:
 - **Performance Impact**: Consider scaling implications of new features
 - **Service Readiness**: Design for future microservices decomposition
 - **Database Efficiency**: Optimize for partition-aware query patterns
+
+## Outstanding Technical Tasks
+
+Based on comprehensive code review conducted 2025-01-23:
+
+### Completed Tasks ✅
+- **Critical Security Fix**: Fixed service category deletion vulnerability (missing userId filter in updateMany operation)
+- **Database Connection Pooling**: Implemented singleton PrismaClient pattern in `/src/lib/prisma.ts` to prevent connection exhaustion
+
+### High Priority Tasks 🔴
+1. **Add missing database indexes for tenant-scoped queries**
+   - Add composite indexes on (userId, otherFields) for all tenant-scoped tables
+   - Improves query performance for multi-tenant architecture
+   
+2. **Fix modal focus trapping and ARIA attributes for accessibility**
+   - Implement proper focus management in modals and panels
+   - Add missing ARIA attributes for screen reader support
+   - Ensure WCAG 2.2 Level AA compliance
+
+### Medium Priority Tasks 🟡
+3. **Associate form error messages with fields using aria-describedby**
+   - Link validation errors to form fields for accessibility
+   - Improve screen reader experience
+
+4. **Optimize N+1 queries in public services API endpoint**
+   - Review `/src/app/api/public/[userId]/services/route.ts` for query optimization
+   - Consider using fewer database round trips
+
+5. **Add rate limiting to API endpoints**
+   - Implement rate limiting middleware to prevent abuse
+   - Protect against DDoS and ensure fair usage
+
+6. **Plan PostgreSQL migration from SQLite**
+   - Design migration strategy for production database
+   - Test partitioning and scaling with PostgreSQL
+
+### Notes
+- All database-related tasks should consider the multi-tenant architecture requirements
+- Accessibility fixes are critical for compliance and should be prioritized
+- Performance optimizations align with scaling requirements outlined in this document
