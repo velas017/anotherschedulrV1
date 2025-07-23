@@ -186,15 +186,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <p className="text-xs text-gray-500">{userEmail}</p>
             </div>
           )}
-          {(sidebarOpen || !sidebarOpen) && (
-            <button 
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className={`p-1 rounded hover:bg-gray-100 ${!sidebarOpen && 'hidden lg:hidden'}`}
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4 text-gray-600" />
-            </button>
-          )}
+          <button 
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="p-1 rounded hover:bg-gray-100"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4 text-gray-600" />
+          </button>
         </div>
       </div>
     </>
