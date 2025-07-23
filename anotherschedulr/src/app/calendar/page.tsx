@@ -15,6 +15,8 @@ import {
   Calendar,
   CalendarDays
 } from 'lucide-react';
+import { parseBusinessHours, isWithinBusinessHours } from '@/lib/availability';
+import type { BusinessHours } from '@/lib/availability';
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -23,7 +25,14 @@ const CalendarPage = () => {
   const [isAppointmentPanelOpen, setIsAppointmentPanelOpen] = useState(false);
   const [isBlockOffTimePanelOpen, setIsBlockOffTimePanelOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+  const [businessHours, setBusinessHours] = useState<BusinessHours>({});
+  const [isLoadingBusinessHours, setIsLoadingBusinessHours] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch business hours on component mount
+  useEffect(() => {
+    fetchBusinessHours();
+  }, []);
 
   // Click outside handler for dropdown
   useEffect(() => {
@@ -42,10 +51,77 @@ const CalendarPage = () => {
     };
   }, [isViewDropdownOpen]);
 
-  // Time slots for the day view
-  const timeSlots = [
-    '8am', '9am', '10am', '11am', 'Noon', '1pm', '2pm', '3pm', '4pm', '5pm'
-  ];
+  // Fetch business hours from the API
+  const fetchBusinessHours = async () => {
+    try {
+      setIsLoadingBusinessHours(true);
+      const response = await fetch('/api/scheduling-page');
+      
+      if (response.ok) {
+        const data = await response.json();
+        const hours = parseBusinessHours(data.businessHours);
+        setBusinessHours(hours);
+      } else {
+        // Use default business hours if API fails
+        setBusinessHours(parseBusinessHours(null));
+      }
+    } catch (error) {
+      console.error('Error fetching business hours:', error);
+      setBusinessHours(parseBusinessHours(null));
+    } finally {
+      setIsLoadingBusinessHours(false);
+    }
+  };
+
+  // Generate time slots based on business hours or use default
+  const generateTimeSlotsForView = () => {
+    // If still loading business hours, show default slots
+    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
+      return ['8am', '9am', '10am', '11am', 'Noon', '1pm', '2pm', '3pm', '4pm', '5pm'];
+    }
+
+    // Generate time slots from 8am to 8pm in 1-hour intervals
+    const slots = [];
+    for (let hour = 8; hour <= 20; hour++) {
+      let displayHour;
+      if (hour === 12) {
+        displayHour = 'Noon';
+      } else if (hour > 12) {
+        displayHour = `${hour - 12}pm`;
+      } else {
+        displayHour = `${hour}am`;
+      }
+      slots.push(displayHour);
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlotsForView();
+
+  // Check if a time slot should be disabled based on business hours
+  const isTimeSlotAvailable = (date: Date, timeSlot: string) => {
+    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
+      return true; // Show all slots while loading
+    }
+
+    // Convert time slot string to hour
+    let hour = 0;
+    if (timeSlot === 'Noon') {
+      hour = 12;
+    } else if (timeSlot.includes('pm')) {
+      hour = parseInt(timeSlot.replace('pm', '')) + 12;
+      if (hour === 24) hour = 12; // Handle 12pm case
+    } else if (timeSlot.includes('am')) {
+      hour = parseInt(timeSlot.replace('am', ''));
+      if (hour === 12) hour = 0; // Handle 12am case
+    }
+
+    // Create a date object for this time slot
+    const slotDate = new Date(date);
+    slotDate.setHours(hour, 0, 0, 0);
+
+    return isWithinBusinessHours(slotDate, businessHours);
+  };
 
   // Get dates for the current week
   const getWeekDates = (date: Date) => {
@@ -373,35 +449,45 @@ const CalendarPage = () => {
                     </div>
                     
                     {/* Day columns */}
-                    {weekDates.map((day, dayIndex) => (
-                      <div 
-                        key={dayIndex} 
-                        className={`border-r border-gray-100 relative p-2 ${
-                          day.isToday ? 'bg-blue-50/30' : ''
-                        }`}
-                      >
-                        {/* Render appointment if it matches this day and time */}
-                        {appointments.map((appointment) => (
-                          appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
-                            <div 
-                              key={appointment.id}
-                              className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
-                              style={{ minHeight: '120px' }}
-                            >
-                              <div className="font-medium text-gray-900 mb-1">
-                                {appointment.client}: {appointment.service}
+                    {weekDates.map((day, dayIndex) => {
+                      const isAvailable = isTimeSlotAvailable(day.date, time);
+                      return (
+                        <div 
+                          key={dayIndex} 
+                          className={`border-r border-gray-100 relative p-2 ${
+                            day.isToday ? 'bg-blue-50/30' : ''
+                          } ${!isAvailable ? 'bg-gray-100/50' : ''}`}
+                        >
+                          {/* Render appointment if it matches this day and time */}
+                          {appointments.map((appointment) => (
+                            appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
+                              <div 
+                                key={appointment.id}
+                                className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
+                                style={{ minHeight: '120px' }}
+                              >
+                                <div className="font-medium text-gray-900 mb-1">
+                                  {appointment.client}: {appointment.service}
+                                </div>
+                                <div className="text-gray-700 mb-1">
+                                  {appointment.treatment}
+                                </div>
+                                <div className="text-gray-600">
+                                  {appointment.time}
+                                </div>
                               </div>
-                              <div className="text-gray-700 mb-1">
-                                {appointment.treatment}
-                              </div>
-                              <div className="text-gray-600">
-                                {appointment.time}
-                              </div>
+                            )
+                          ))}
+                          
+                          {/* Show unavailable indicator for business hours */}
+                          {!isAvailable && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-xs text-gray-400 font-medium">Unavailable</span>
                             </div>
-                          )
-                        ))}
-                      </div>
-                    ))}
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -432,7 +518,16 @@ const CalendarPage = () => {
                     <div className="w-24 border-r border-gray-200 bg-gray-50 p-3 text-right">
                       <span className="text-sm text-gray-600">{time}</span>
                     </div>
-                    <div className="flex-1 p-2 relative">
+                    <div className={`flex-1 p-2 relative ${
+                      !isTimeSlotAvailable(currentDate, time) ? 'bg-gray-100/50' : ''
+                    }`}>
+                      {/* Show unavailable indicator for business hours */}
+                      {!isTimeSlotAvailable(currentDate, time) && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xs text-gray-400 font-medium">Unavailable</span>
+                        </div>
+                      )}
+                      
                       {/* Render appointments for the current day */}
                       {appointments.map((appointment) => {
                         const appointmentDate = new Date(currentDate);
