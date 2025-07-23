@@ -51,7 +51,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, duration, price, categoryId, isVisible, sortOrder } = body;
+    const { name, description, duration, price, categoryId, isVisible, sortOrder, paddingTime, isPrivate } = body;
 
     // Verify service ownership
     const existingService = await prisma.service.findFirst({
@@ -76,7 +76,9 @@ export async function PUT(
         price: price ? parseFloat(price) : undefined,
         categoryId: categoryId || null,
         isVisible,
-        sortOrder
+        sortOrder,
+        paddingTime: paddingTime !== undefined ? parseInt(paddingTime) : undefined,
+        isPrivate
       },
       include: {
         category: true

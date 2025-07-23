@@ -97,6 +97,8 @@ model Service {
   price       Float
   isVisible   Boolean  @default(true)
   sortOrder   Int      @default(0)
+  paddingTime Int      @default(0) // buffer time after appointment
+  isPrivate   Boolean  @default(false) // only bookable by direct link
   
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

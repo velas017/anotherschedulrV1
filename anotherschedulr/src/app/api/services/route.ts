@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, duration, price, categoryId, isVisible, sortOrder } = body;
+    const { name, description, duration, price, categoryId, isVisible, sortOrder, paddingTime, isPrivate } = body;
 
     if (!name || !duration || !price) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
         categoryId: categoryId || null,
         isVisible: isVisible !== undefined ? isVisible : true,
         sortOrder: sortOrder || 0,
+        paddingTime: paddingTime ? parseInt(paddingTime) : 0,
+        isPrivate: isPrivate || false,
         userId: session.user.id
       },
       include: {
