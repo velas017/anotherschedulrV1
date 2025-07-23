@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { useState, useRef } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
@@ -39,10 +39,24 @@ const SigninPage = () => {
   };
 
   const handleGoogleSignin = async () => {
+    // Prevent multiple clicks
+    if (loading) {
+      console.log("⚠️ Sign in already in progress, ignoring click");
+      return;
+    }
+    
     setLoading(true);
+    setError("");
     try {
-      await signIn("google", { callbackUrl: "/dashboard" });
+      console.log("🔍 Starting Google sign in...");
+      // Use redirect: true for OAuth providers to prevent redirect loops
+      await signIn("google", { 
+        callbackUrl: "/dashboard",
+        redirect: true 
+      });
+      // Code won't reach here due to redirect
     } catch (error) {
+      console.error("🔍 Google sign in exception:", error);
       setError("Google sign in failed");
       setLoading(false);
     }

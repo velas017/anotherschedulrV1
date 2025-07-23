@@ -24,7 +24,7 @@ const LandingPage = () => {
                         <Link href="/signup" className="bg-blue-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
                             Get started
                         </Link>
-                        <Link href="/dashboard" className="bg-gray-100 text-gray-700 px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-200 transition-all duration-200 border border-gray-200">
+                        <Link href="/demo" className="bg-gray-100 text-gray-700 px-6 py-3 rounded-full text-sm font-medium hover:bg-gray-200 transition-all duration-200 border border-gray-200">
                             View Dashboard Demo →
                         </Link>
                         <p className="text-gray-500 text-sm">

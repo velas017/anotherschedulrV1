@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import { Adapter } from "next-auth/adapters"
 import { prisma } from '@/lib/prisma'
+import crypto from "crypto"
 
 // Validate environment variables
 function validateEnvironmentVariables() {
@@ -63,9 +64,22 @@ export const authOptions: NextAuthOptions = {
         params: {
           prompt: "consent",
           access_type: "offline",
-          response_type: "code"
+          response_type: "code",
+          scope: "openid email profile"
         }
-      }
+      },
+      httpOptions: {
+        timeout: 40000,
+      },
+      profile(profile) {
+        console.log("🔍 Google Profile Data:", profile);
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+        }
+      },
     }),
     CredentialsProvider({
       name: "credentials",
@@ -126,56 +140,156 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
+        domain: undefined,
+      },
+    },
+    callbackUrl: {
+      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: `${process.env.NODE_ENV === "production" ? "__Host-" : ""}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("🔍 SignIn Callback:");
-      console.log("  - User:", user);
-      console.log("  - Account:", account);
-      console.log("  - Profile:", profile);
+      console.log("🔍 SignIn Callback START:");
+      console.log("  - User:", JSON.stringify(user, null, 2));
+      console.log("  - Account:", JSON.stringify(account, null, 2));
+      console.log("  - Profile:", JSON.stringify(profile, null, 2));
       
-      // For OAuth providers, ensure we have the basic user info
-      if (account?.provider === "google" && profile) {
-        // Update user with Google profile data if needed
-        try {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              name: profile.name || user.name,
-              image: profile.picture || profile.image || user.image,
-            },
+      try {
+        // For OAuth providers (specifically Google)
+        if (account?.provider === "google") {
+          console.log("✅ Processing Google OAuth sign in");
+          
+          if (!user.email) {
+            console.error("❌ No email provided by Google");
+            return false;
+          }
+          
+          // Use a transaction to prevent race conditions
+          const result = await prisma.$transaction(async (tx) => {
+            // Check if user already exists in database
+            const existingUser = await tx.user.findUnique({
+              where: { email: user.email! },
+              include: { accounts: true }
+            });
+            
+            if (existingUser) {
+              console.log("✅ Existing user found:", existingUser.email);
+              
+              // Check if this Google account is already linked
+              const existingGoogleAccount = existingUser.accounts.find(
+                acc => acc.provider === "google"
+              );
+              
+              if (existingGoogleAccount) {
+                console.log("✅ Google account already linked for user");
+                // Just update the profile data
+                await tx.user.update({
+                  where: { id: existingUser.id },
+                  data: {
+                    name: profile?.name || user.name || existingUser.name,
+                    image: profile?.picture || user.image || existingUser.image,
+                  },
+                });
+              } else {
+                console.log("⚠️ User exists but no Google account linked yet");
+                // This handles the case where user exists (maybe from email/password)
+                // but is now linking their Google account
+              }
+              
+              return { success: true, userId: existingUser.id };
+            } else {
+              console.log("✅ New Google user, will be created by adapter");
+              return { success: true, userId: null };
+            }
           });
-        } catch (error) {
-          console.error("Failed to update user profile:", error);
+          
+          console.log("✅ SignIn callback returning:", result.success);
+          return result.success;
         }
+        
+        // For credentials provider
+        if (account?.provider === "credentials") {
+          console.log("✅ Credentials sign in successful");
+          return true;
+        }
+        
+        console.log("⚠️ Unknown provider:", account?.provider);
+        return true;
+        
+      } catch (error: any) {
+        console.error("❌ SignIn callback error:", error);
+        console.error("❌ Error stack:", error.stack);
+        
+        // Monitor for duplicate account attempts
+        if (error.code === 'P2002' && error.meta?.target?.includes('userId_provider')) {
+          console.error("🚨 DUPLICATE ACCOUNT ATTEMPT DETECTED!");
+          console.error("🚨 User tried to link multiple accounts from same provider");
+          console.error("🚨 This should be prevented by our unique constraint");
+          // You could send this to your monitoring service here
+        }
+        
+        return false; // Block sign in on errors to see what's failing
       }
-      
-      return true;
     },
-    async session({ session, user }) {
-      console.log("🔍 Session Callback:");
-      console.log("  - Session:", session);
-      console.log("  - User:", user);
+    
+    async session({ session, user, token }) {
+      console.log("🔍 Session Callback START:");
+      console.log("  - Session:", JSON.stringify(session, null, 2));
+      console.log("  - Database user:", JSON.stringify(user, null, 2));
+      console.log("  - Token:", JSON.stringify(token, null, 2));
       
-      if (session.user) {
-        session.user.id = user.id;
+      try {
+        // Ensure session has user ID from database
+        if (session.user && user) {
+          session.user.id = user.id;
+          console.log("✅ Session updated with user ID:", user.id);
+        } else {
+          console.error("❌ Missing session.user or database user:", { 
+            hasSessionUser: !!session.user, 
+            hasDbUser: !!user 
+          });
+        }
+        
+        console.log("✅ Session callback returning:", JSON.stringify(session, null, 2));
+        return session;
+      } catch (error) {
+        console.error("❌ Session callback error:", error);
+        return session;
       }
-      
-      console.log("🔍 Updated Session:", session);
-      return session;
     },
+    
     async redirect({ url, baseUrl }) {
       console.log("🔍 Redirect Callback:");
       console.log("  - URL:", url);
       console.log("  - Base URL:", baseUrl);
       
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      
       // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
+      if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      
+      // Default to base URL for security
+      return baseUrl;
     },
   },
   pages: {
@@ -185,20 +299,35 @@ export const authOptions: NextAuthOptions = {
   },
   debug: process.env.NODE_ENV === "development",
   events: {
-    async signIn({ user, account, profile }) {
-      console.log("🎉 User signed in:", user.email);
+    async signIn({ user, account, profile, isNewUser }) {
+      console.log("🎉 User signed in:");
+      console.log("  - Email:", user.email);
+      console.log("  - Provider:", account?.provider);
+      console.log("  - Is new user:", isNewUser);
+      console.log("  - User ID:", user.id);
     },
     async signOut({ session, token }) {
-      console.log("👋 User signed out");
+      console.log("👋 User signed out:");
+      if (session?.user?.email) {
+        console.log("  - Email:", session.user.email);
+      }
     },
     async createUser({ user }) {
-      console.log("🆕 New user created:", user.email);
+      console.log("🆕 New user created:");
+      console.log("  - Email:", user.email);
+      console.log("  - ID:", user.id);
+      console.log("  - Name:", user.name);
     },
     async linkAccount({ user, account, profile }) {
-      console.log("🔗 Account linked:", account.provider, "for user:", user.email);
+      console.log("🔗 Account linked:");
+      console.log("  - Provider:", account.provider);
+      console.log("  - User email:", user.email);
+      console.log("  - Provider account ID:", account.providerAccountId);
     },
     async session({ session, token }) {
-      console.log("📊 Session accessed");
+      console.log("📊 Session accessed:");
+      console.log("  - User email:", session?.user?.email);
+      console.log("  - Session expires:", session?.expires);
     },
   },
 }
