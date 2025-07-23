@@ -54,9 +54,11 @@ model User {
   timezone      String?   @default("UTC")
   
   // Relations
-  appointments  Appointment[]
-  clients       Client[]
-  services      Service[]
+  appointments      Appointment[]
+  clients           Client[]
+  services          Service[]
+  serviceCategories ServiceCategory[]
+  schedulingPage    SchedulingPage?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -93,9 +95,14 @@ model Service {
   description String?
   duration    Int      // in minutes
   price       Float
+  isVisible   Boolean  @default(true)
+  sortOrder   Int      @default(0)
   
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId  String?
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   
   appointments Appointment[]
   
@@ -130,4 +137,47 @@ enum AppointmentStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  sortOrder   Int       @default(0)
+  isVisible   Boolean   @default(true)
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  services    Service[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SchedulingPage {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  isPublic        Boolean  @default(true)
+  customDomain    String?
+  welcomeMessage  String?
+  
+  // Theme and styling
+  primaryColor    String   @default("#000000")
+  secondaryColor  String   @default("#6b7280")
+  fontFamily      String   @default("Inter")
+  customCSS       String?
+  
+  // Business hours and settings
+  businessHours   String?  // JSON string for business hours
+  timezone        String   @default("UTC")
+  
+  // Booking settings
+  allowOnlineBooking Boolean @default(true)
+  requireApproval    Boolean @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
