@@ -224,7 +224,7 @@ const PublicBookingPage = () => {
               Powered by
             </div>
             <div className="text-sm font-medium text-gray-900">
-              acuity:scheduling
+              another schedulr
             </div>
           </div>
         </div>

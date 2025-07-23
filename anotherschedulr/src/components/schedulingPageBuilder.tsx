@@ -290,31 +290,41 @@ const SchedulingPageBuilder = () => {
       {/* Right Side - Preview */}
       <div className="flex-1 flex flex-col">
         {/* Preview Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
           <div className="flex items-center justify-between">
+            <button className="px-4 py-2 bg-black text-white text-xs font-medium rounded hover:bg-gray-800 transition-colors">
+              EDIT TEXT
+            </button>
+            
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-gray-900">Scheduling Page</span>
+            </div>
+
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setPreviewDevice('desktop')}
-                className={`p-2 rounded ${
-                  previewDevice === 'desktop' ? 'bg-gray-100' : 'hover:bg-gray-50'
+                className={`p-2 rounded transition-colors ${
+                  previewDevice === 'desktop' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Monitor className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setPreviewDevice('mobile')}
-                className={`p-2 rounded ${
-                  previewDevice === 'mobile' ? 'bg-gray-100' : 'hover:bg-gray-50'
+                className={`p-2 rounded transition-colors ${
+                  previewDevice === 'mobile' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Smartphone className="w-5 h-5" />
               </button>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Scheduling Page</span>
-              <div className="flex space-x-2">
-                <span className="text-xs text-gray-400">SIGN UP</span>
-                <span className="text-xs text-gray-400">LOGIN</span>
+              <div className="ml-4 p-2 text-gray-500 hover:text-gray-700 cursor-pointer">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m7-7H5" />
+                </svg>
               </div>
             </div>
           </div>
@@ -322,13 +332,9 @@ const SchedulingPageBuilder = () => {
 
         {/* Preview Content */}
         <div className="flex-1 bg-gray-100 p-8 overflow-auto">
-          <div className={`mx-auto bg-white shadow-sm rounded-lg ${
+          <div className={`mx-auto bg-white shadow-sm ${
             previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl'
           }`}>
-            {/* Preview Page Header */}
-            <div className="p-6 border-b border-gray-200 text-center">
-              <h2 className="text-lg font-semibold text-gray-900">Scheduling Page</h2>
-            </div>
 
             {/* Category Selector */}
             <div className="p-6">
@@ -386,7 +392,7 @@ const SchedulingPageBuilder = () => {
                   Powered by
                 </div>
                 <div className="text-sm font-medium text-gray-900 mt-1">
-                  acuity:scheduling
+                  another schedulr
                 </div>
               </div>
             </div>
