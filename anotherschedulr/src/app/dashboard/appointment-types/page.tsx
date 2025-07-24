@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboardLayout';
 import { 
   Plus, 
@@ -39,6 +40,7 @@ interface ServiceCategory {
 }
 
 const AppointmentTypesPage = () => {
+  const router = useRouter();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,8 +91,7 @@ const AppointmentTypesPage = () => {
   };
 
   const handleEditService = (service: Service) => {
-    setSelectedService(service);
-    setIsNewServiceModalOpen(true);
+    router.push(`/dashboard/appointment-types/${service.id}/edit`);
   };
 
   const handleDuplicateService = async (service: Service) => {
@@ -205,7 +206,7 @@ const AppointmentTypesPage = () => {
               Create your first appointment type to start accepting bookings. Add services like consultations, treatments, or sessions.
             </p>
             <button
-              onClick={() => setIsNewServiceModalOpen(true)}
+              onClick={() => router.push('/dashboard/appointment-types/new')}
               className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
             >
               NEW TYPE OF SERVICE
@@ -358,7 +359,7 @@ const AppointmentTypesPage = () => {
           {activeTab === 'types' && services.length > 0 && (
             <div className="bg-white border-b border-gray-200 px-6 py-4">
               <button
-                onClick={() => setIsNewServiceModalOpen(true)}
+                onClick={() => router.push('/dashboard/appointment-types/new')}
                 className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
               >
                 NEW TYPE OF SERVICE
