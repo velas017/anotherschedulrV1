@@ -129,28 +129,44 @@ const AvailabilityPage = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6">
             {/* Regular Hours Toggle */}
-            <div className="mb-6">
-              <label className="flex items-center space-x-3">
+            <fieldset className="mb-6">
+              <legend className="sr-only">Business hours configuration</legend>
+              <div className="flex items-start space-x-3">
                 <input
                   type="checkbox"
+                  id="regular-hours-toggle"
                   checked={hasRegularHours}
                   onChange={(e) => handleRegularHoursToggle(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-0.5"
+                  aria-describedby="regular-hours-description"
                 />
-                <span className="text-sm font-medium text-gray-900">
-                  I have regular hours every week
-                </span>
-              </label>
-            </div>
+                <div>
+                  <label htmlFor="regular-hours-toggle" className="text-sm font-medium text-gray-900 cursor-pointer">
+                    I have regular hours every week
+                  </label>
+                  <p id="regular-hours-description" className="text-xs text-gray-600 mt-1">
+                    Enable this to set consistent business hours that repeat each week
+                  </p>
+                </div>
+              </div>
+            </fieldset>
 
             {/* Weekly Hours Grid */}
             {hasRegularHours && (
-              <div className="mb-6">
-                <WeeklyHoursGrid
-                  businessHours={businessHours}
-                  onChange={handleHoursChange}
-                />
-              </div>
+              <fieldset className="mb-6">
+                <legend className="text-base font-medium text-gray-900 mb-4">
+                  Set your weekly business hours
+                </legend>
+                <div aria-describedby="hours-grid-description">
+                  <WeeklyHoursGrid
+                    businessHours={businessHours}
+                    onChange={handleHoursChange}
+                  />
+                </div>
+                <p id="hours-grid-description" className="text-sm text-gray-600 mt-3">
+                  Configure the hours you&apos;re available for appointments each day of the week
+                </p>
+              </fieldset>
             )}
 
             {/* Save Button */}
@@ -158,28 +174,35 @@ const AvailabilityPage = () => {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-6 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                aria-describedby={isSaving ? "save-status" : undefined}
               >
                 {isSaving ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true"></div>
                     <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
+                    <Save className="w-4 h-4" aria-hidden="true" />
                     <span>SAVE REGULAR HOURS</span>
                   </>
                 )}
               </button>
+              {isSaving && (
+                <div id="save-status" className="sr-only" aria-live="polite">
+                  Saving your business hours, please wait...
+                </div>
+              )}
             </div>
 
             {/* Help Text */}
             {hasRegularHours && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Example:</strong> If a client chooses your services based on this availability and your scheduling limits, 
-                  clients will see available time slots during your business hours (unless something else is blocking them).
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg" role="complementary">
+                <h3 className="text-sm font-medium text-gray-900 mb-2">How this works</h3>
+                <p className="text-sm text-gray-700">
+                  Clients will see available time slots during your business hours when booking appointments. 
+                  These hours work together with your other scheduling settings to determine availability.
                 </p>
               </div>
             )}

@@ -53,12 +53,16 @@ const WeeklyHoursGrid: React.FC<WeeklyHoursGridProps> = ({ businessHours, onChan
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div 
+      className="border border-gray-200 rounded-lg overflow-hidden"
+      role="table"
+      aria-label="Weekly business hours"
+    >
       {/* Header */}
-      <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+      <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200" role="row">
         {DAYS.map((day) => (
-          <div key={day.key} className="p-3 text-center">
-            <div className="text-xs font-medium text-gray-700 uppercase tracking-wide">
+          <div key={day.key} className="p-3 text-center" role="columnheader">
+            <div className="text-xs font-medium text-gray-800 uppercase tracking-wide">
               {day.label}
             </div>
           </div>
@@ -66,17 +70,24 @@ const WeeklyHoursGrid: React.FC<WeeklyHoursGridProps> = ({ businessHours, onChan
       </div>
 
       {/* Time Grid */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7" role="row">
         {DAYS.map((day) => {
           const dayHours = businessHours[day.key];
           const isOpen = dayHours?.open || false;
 
           return (
-            <div key={day.key} className="border-r border-gray-200 last:border-r-0 p-4 min-h-[120px] bg-white hover:bg-gray-50 transition-colors">
+            <div 
+              key={day.key} 
+              className="border-r border-gray-200 last:border-r-0 p-4 min-h-[120px] bg-white hover:bg-gray-50 transition-colors"
+              role="cell"
+            >
               {isOpen ? (
                 <div className="space-y-3">
                   {/* Start Time */}
                   <div>
+                    <label className="block text-xs font-medium text-gray-800 mb-1">
+                      Start time
+                    </label>
                     <TimeInput
                       value={dayHours.start || '09:00'}
                       onChange={(value) => handleTimeChange(day.key, 'start', value)}
@@ -85,10 +96,13 @@ const WeeklyHoursGrid: React.FC<WeeklyHoursGridProps> = ({ businessHours, onChan
                   </div>
                   
                   {/* Separator */}
-                  <div className="text-center text-gray-400 text-sm">to</div>
+                  <div className="text-center text-gray-600 text-sm" aria-hidden="true">to</div>
                   
                   {/* End Time */}
                   <div>
+                    <label className="block text-xs font-medium text-gray-800 mb-1">
+                      End time
+                    </label>
                     <TimeInput
                       value={dayHours.end || '17:00'}
                       onChange={(value) => handleTimeChange(day.key, 'end', value)}
@@ -99,17 +113,19 @@ const WeeklyHoursGrid: React.FC<WeeklyHoursGridProps> = ({ businessHours, onChan
                   {/* Close Button */}
                   <button
                     onClick={() => handleDayToggle(day.key, false)}
-                    className="w-full text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
+                    className="w-full text-xs text-gray-600 hover:text-gray-800 underline transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                    aria-label={`Close ${day.label} - mark this day as closed`}
                   >
                     Close this day
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <div className="flex flex-col items-center justify-center h-full text-gray-600">
                   <div className="text-sm mb-2">Closed</div>
                   <button
                     onClick={() => handleDayToggle(day.key, true)}
-                    className="text-xs text-blue-600 hover:text-blue-700 underline transition-colors"
+                    className="text-xs text-blue-600 hover:text-blue-700 underline transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded px-1"
+                    aria-label={`Add hours for ${day.label} - set business hours for this day`}
                   >
                     Add hours
                   </button>

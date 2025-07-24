@@ -77,21 +77,25 @@ const CalendarPage = () => {
   const generateTimeSlotsForView = () => {
     // If still loading business hours, show default slots
     if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
-      return ['8am', '9am', '10am', '11am', 'Noon', '1pm', '2pm', '3pm', '4pm', '5pm'];
+      return ['8am', '8:30am', '9am', '9:30am', '10am', '10:30am', '11am', '11:30am', 'Noon', '12:30pm', '1pm', '1:30pm', '2pm', '2:30pm', '3pm', '3:30pm', '4pm', '4:30pm', '5pm'];
     }
 
-    // Generate time slots from 8am to 8pm in 1-hour intervals
+    // Generate time slots from 8am to 8pm in 30-minute intervals
     const slots = [];
     for (let hour = 8; hour <= 20; hour++) {
-      let displayHour;
-      if (hour === 12) {
-        displayHour = 'Noon';
-      } else if (hour > 12) {
-        displayHour = `${hour - 12}pm`;
-      } else {
-        displayHour = `${hour}am`;
+      for (let minute = 0; minute < 60; minute += 30) {
+        let displayTime;
+        if (hour === 12 && minute === 0) {
+          displayTime = 'Noon';
+        } else if (hour === 12 && minute === 30) {
+          displayTime = '12:30pm';
+        } else if (hour > 12) {
+          displayTime = minute === 0 ? `${hour - 12}pm` : `${hour - 12}:30pm`;
+        } else {
+          displayTime = minute === 0 ? `${hour}am` : `${hour}:30am`;
+        }
+        slots.push(displayTime);
       }
-      slots.push(displayHour);
     }
     return slots;
   };
@@ -104,21 +108,32 @@ const CalendarPage = () => {
       return true; // Show all slots while loading
     }
 
-    // Convert time slot string to hour
+    // Convert time slot string to hour and minute
     let hour = 0;
+    let minute = 0;
+    
     if (timeSlot === 'Noon') {
       hour = 12;
-    } else if (timeSlot.includes('pm')) {
-      hour = parseInt(timeSlot.replace('pm', '')) + 12;
-      if (hour === 24) hour = 12; // Handle 12pm case
-    } else if (timeSlot.includes('am')) {
-      hour = parseInt(timeSlot.replace('am', ''));
-      if (hour === 12) hour = 0; // Handle 12am case
+      minute = 0;
+    } else {
+      // Parse time slots like "11:30am" or "2pm"
+      const timeMatch = timeSlot.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]);
+        minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+        const isPM = timeMatch[3].toLowerCase() === 'pm';
+        
+        if (isPM && hour !== 12) {
+          hour += 12;
+        } else if (!isPM && hour === 12) {
+          hour = 0;
+        }
+      }
     }
 
     // Create a date object for this time slot
     const slotDate = new Date(date);
-    slotDate.setHours(hour, 0, 0, 0);
+    slotDate.setHours(hour, minute, 0, 0);
 
     return isWithinBusinessHours(slotDate, businessHours);
   };
@@ -442,10 +457,10 @@ const CalendarPage = () => {
               {/* Time slots and appointment grid */}
               <div className="flex-1 overflow-y-auto">
                 {timeSlots.map((time, timeIndex) => (
-                  <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '80px' }}>
+                  <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '40px' }}>
                     {/* Time label */}
-                    <div className="border-r border-gray-200 bg-gray-50 p-3 text-right">
-                      <span className="text-sm text-gray-600">{time}</span>
+                    <div className="border-r border-gray-200 bg-gray-50 p-2 text-right">
+                      <span className="text-xs text-gray-600">{time}</span>
                     </div>
                     
                     {/* Day columns */}
@@ -514,9 +529,9 @@ const CalendarPage = () => {
 
               <div className="flex-1 overflow-y-auto">
                 {timeSlots.map((time, timeIndex) => (
-                  <div key={timeIndex} className="flex border-b border-gray-100" style={{ minHeight: '80px' }}>
-                    <div className="w-24 border-r border-gray-200 bg-gray-50 p-3 text-right">
-                      <span className="text-sm text-gray-600">{time}</span>
+                  <div key={timeIndex} className="flex border-b border-gray-100" style={{ minHeight: '40px' }}>
+                    <div className="w-24 border-r border-gray-200 bg-gray-50 p-2 text-right">
+                      <span className="text-xs text-gray-600">{time}</span>
                     </div>
                     <div className={`flex-1 p-2 relative ${
                       !isTimeSlotAvailable(currentDate, time) ? 'bg-gray-100/50' : ''
