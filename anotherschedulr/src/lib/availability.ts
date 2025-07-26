@@ -14,6 +14,16 @@ export interface TimeSlot {
   available: boolean;
 }
 
+export interface BlockedTime {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  reason?: string;
+  isRecurring: boolean;
+  recurrenceType?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  recurrenceEnd?: Date;
+}
+
 /**
  * Get the day key (sunday, monday, etc.) for a given date
  */
@@ -43,6 +53,72 @@ export const isWithinBusinessHours = (
   const endTime = setMinutes(setHours(date, endHour), endMinute);
   
   return isWithinInterval(date, { start: startTime, end: endTime });
+};
+
+/**
+ * Check if a specific date and time is blocked
+ */
+export const isTimeBlocked = (
+  date: Date,
+  blockedTimes: BlockedTime[]
+): boolean => {
+  return blockedTimes.some(blocked => {
+    const blockStart = new Date(blocked.startTime);
+    const blockEnd = new Date(blocked.endTime);
+    
+    // Check if the date falls within the blocked time period
+    if (isWithinInterval(date, { start: blockStart, end: blockEnd })) {
+      return true;
+    }
+    
+    // Handle recurring blocks
+    if (blocked.isRecurring && blocked.recurrenceType && blocked.recurrenceEnd) {
+      const recurrenceEnd = new Date(blocked.recurrenceEnd);
+      
+      // Don't check beyond recurrence end date
+      if (date > recurrenceEnd) {
+        return false;
+      }
+      
+      // Calculate if this date matches the recurrence pattern
+      switch (blocked.recurrenceType) {
+        case 'DAILY': {
+          // Check if the time of day matches
+          const blockTimeStart = blockStart.getHours() * 60 + blockStart.getMinutes();
+          const blockTimeEnd = blockEnd.getHours() * 60 + blockEnd.getMinutes();
+          const dateTime = date.getHours() * 60 + date.getMinutes();
+          
+          return dateTime >= blockTimeStart && dateTime <= blockTimeEnd;
+        }
+        
+        case 'WEEKLY': {
+          // Check if it's the same day of week and time
+          if (date.getDay() === blockStart.getDay()) {
+            const blockTimeStart = blockStart.getHours() * 60 + blockStart.getMinutes();
+            const blockTimeEnd = blockEnd.getHours() * 60 + blockEnd.getMinutes();
+            const dateTime = date.getHours() * 60 + date.getMinutes();
+            
+            return dateTime >= blockTimeStart && dateTime <= blockTimeEnd;
+          }
+          break;
+        }
+        
+        case 'MONTHLY': {
+          // Check if it's the same day of month and time
+          if (date.getDate() === blockStart.getDate()) {
+            const blockTimeStart = blockStart.getHours() * 60 + blockStart.getMinutes();
+            const blockTimeEnd = blockEnd.getHours() * 60 + blockEnd.getMinutes();
+            const dateTime = date.getHours() * 60 + date.getMinutes();
+            
+            return dateTime >= blockTimeStart && dateTime <= blockTimeEnd;
+          }
+          break;
+        }
+      }
+    }
+    
+    return false;
+  });
 };
 
 /**

@@ -15,8 +15,8 @@ import {
   Calendar,
   CalendarDays
 } from 'lucide-react';
-import { parseBusinessHours, isWithinBusinessHours } from '@/lib/availability';
-import type { BusinessHours } from '@/lib/availability';
+import { parseBusinessHours, isWithinBusinessHours, isTimeBlocked } from '@/lib/availability';
+import type { BusinessHours, BlockedTime } from '@/lib/availability';
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -27,12 +27,14 @@ const CalendarPage = () => {
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const [businessHours, setBusinessHours] = useState<BusinessHours>({});
   const [isLoadingBusinessHours, setIsLoadingBusinessHours] = useState(true);
+  const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch business hours on component mount
+  // Fetch business hours and blocked times on component mount
   useEffect(() => {
     fetchBusinessHours();
-  }, []);
+    fetchBlockedTimes();
+  }, [currentDate, viewType]);
 
   // Click outside handler for dropdown
   useEffect(() => {
@@ -73,6 +75,41 @@ const CalendarPage = () => {
     }
   };
 
+  // Fetch blocked times from the API
+  const fetchBlockedTimes = async () => {
+    try {
+      // Calculate date range based on current view
+      let startDate, endDate;
+      
+      if (viewType === 'week') {
+        const weekStart = new Date(currentDate);
+        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        startDate = weekStart.toISOString();
+        endDate = weekEnd.toISOString();
+      } else if (viewType === 'month') {
+        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        startDate = monthStart.toISOString();
+        endDate = monthEnd.toISOString();
+      } else {
+        // Day view
+        startDate = new Date(currentDate.setHours(0, 0, 0, 0)).toISOString();
+        endDate = new Date(currentDate.setHours(23, 59, 59, 999)).toISOString();
+      }
+
+      const response = await fetch(`/api/blocked-time?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBlockedTimes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching blocked times:', error);
+    }
+  };
+
   // Generate time slots based on business hours or use default
   const generateTimeSlotsForView = () => {
     // If still loading business hours, show default slots
@@ -102,10 +139,10 @@ const CalendarPage = () => {
 
   const timeSlots = generateTimeSlotsForView();
 
-  // Check if a time slot should be disabled based on business hours
+  // Check if a time slot should be disabled based on business hours and blocked times
   const isTimeSlotAvailable = (date: Date, timeSlot: string) => {
     if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
-      return true; // Show all slots while loading
+      return { available: true, reason: null }; // Show all slots while loading
     }
 
     // Convert time slot string to hour and minute
@@ -135,7 +172,17 @@ const CalendarPage = () => {
     const slotDate = new Date(date);
     slotDate.setHours(hour, minute, 0, 0);
 
-    return isWithinBusinessHours(slotDate, businessHours);
+    // Check if blocked
+    if (isTimeBlocked(slotDate, blockedTimes)) {
+      return { available: false, reason: 'blocked' };
+    }
+
+    // Check business hours
+    if (!isWithinBusinessHours(slotDate, businessHours)) {
+      return { available: false, reason: 'outside-hours' };
+    }
+
+    return { available: true, reason: null };
   };
 
   // Get dates for the current week
@@ -465,13 +512,13 @@ const CalendarPage = () => {
                     
                     {/* Day columns */}
                     {weekDates.map((day, dayIndex) => {
-                      const isAvailable = isTimeSlotAvailable(day.date, time);
+                      const availability = isTimeSlotAvailable(day.date, time);
                       return (
                         <div 
                           key={dayIndex} 
                           className={`border-r border-gray-100 relative p-2 ${
                             day.isToday ? 'bg-blue-50/30' : ''
-                          } ${!isAvailable ? 'bg-gray-100/50' : ''}`}
+                          } ${!availability.available ? (availability.reason === 'blocked' ? 'bg-red-50' : 'bg-gray-100/50') : ''}`}
                         >
                           {/* Render appointment if it matches this day and time */}
                           {appointments.map((appointment) => (
@@ -494,10 +541,14 @@ const CalendarPage = () => {
                             )
                           ))}
                           
-                          {/* Show unavailable indicator for business hours */}
-                          {!isAvailable && (
+                          {/* Show unavailable indicator */}
+                          {!availability.available && (
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-xs text-gray-400 font-medium">Unavailable</span>
+                              <span className={`text-xs font-medium ${
+                                availability.reason === 'blocked' ? 'text-red-600' : 'text-gray-400'
+                              }`}>
+                                {availability.reason === 'blocked' ? 'Blocked' : 'Unavailable'}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -534,12 +585,17 @@ const CalendarPage = () => {
                       <span className="text-xs text-gray-600">{time}</span>
                     </div>
                     <div className={`flex-1 p-2 relative ${
-                      !isTimeSlotAvailable(currentDate, time) ? 'bg-gray-100/50' : ''
+                      !isTimeSlotAvailable(currentDate, time).available ? 
+                        (isTimeSlotAvailable(currentDate, time).reason === 'blocked' ? 'bg-red-50' : 'bg-gray-100/50') : ''
                     }`}>
-                      {/* Show unavailable indicator for business hours */}
-                      {!isTimeSlotAvailable(currentDate, time) && (
+                      {/* Show unavailable indicator */}
+                      {!isTimeSlotAvailable(currentDate, time).available && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-xs text-gray-400 font-medium">Unavailable</span>
+                          <span className={`text-xs font-medium ${
+                            isTimeSlotAvailable(currentDate, time).reason === 'blocked' ? 'text-red-600' : 'text-gray-400'
+                          }`}>
+                            {isTimeSlotAvailable(currentDate, time).reason === 'blocked' ? 'Blocked' : 'Unavailable'}
+                          </span>
                         </div>
                       )}
                       
@@ -643,6 +699,10 @@ const CalendarPage = () => {
       <BlockOffTimePanel 
         isOpen={isBlockOffTimePanelOpen}
         onClose={() => setIsBlockOffTimePanelOpen(false)}
+        onSuccess={() => {
+          // Refresh blocked times after successful creation
+          fetchBlockedTimes();
+        }}
       />
     </DashboardLayout>
   );

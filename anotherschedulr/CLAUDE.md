@@ -43,6 +43,62 @@ This is a Next.js 15 application using App Router with the following stack:
 ### Database Schema
 Main entities: User, Client, Service, Appointment (see `prisma/schema.prisma`)
 
+## Development Guidelines
+
+### Database Integration
+
+**CRITICAL**: Always use the correct Prisma import pattern to avoid runtime errors.
+
+#### ✅ Correct Pattern
+```typescript
+import { prisma } from '@/lib/prisma';  // Named import - REQUIRED
+```
+
+#### ❌ Common Mistake
+```typescript
+import prisma from '@/lib/prisma';     // Default import - WILL FAIL
+```
+
+**Why**: The prisma client is exported as a named export (`export const prisma = ...`) from `/src/lib/prisma.ts`, so it must be imported using destructuring syntax.
+
+### API Route Standards
+
+All API routes must follow this pattern for database operations:
+
+```typescript
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+import { prisma } from '@/lib/prisma';  // ✅ Correct import
+
+export async function GET(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // Standard session validation
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Use session.user.id directly for tenant isolation
+    const data = await prisma.yourModel.findMany({
+      where: { userId: session.user.id },  // ✅ Direct use of session.user.id
+    });
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+#### Key Points:
+- **Import**: Use `{ prisma }` named import, never default import
+- **Session**: Use `session?.user?.id` directly, no database lookup needed
+- **Tenant Isolation**: Always filter by `userId: session.user.id`
+- **Error Handling**: Log errors and return appropriate HTTP status codes
+
 ### Environment Variables
 Required in `.env.local`:
 - `DATABASE_URL` - SQLite or PostgreSQL connection
