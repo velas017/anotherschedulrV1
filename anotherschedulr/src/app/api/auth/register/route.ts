@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from '@/lib/prisma';
+import { registerSchema, validateRequestBody } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json();
-
-    // Validate input
-    if (!name || !email || !password) {
+    // Validate and sanitize input
+    const validation = await validateRequestBody(request, registerSchema);
+    
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: validation.error },
         { status: 400 }
       );
     }
+    
+    const { name, email, password } = validation.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({

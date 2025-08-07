@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // PUT /api/blocked-time/[id] - Update a blocked time
 export async function PUT(
@@ -10,16 +10,8 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const { id } = params;
@@ -37,7 +29,7 @@ export async function PUT(
     const existingBlockedTime = await prisma.blockedTime.findFirst({
       where: {
         id,
-        userId: user.id,
+        userId: session.user.id,
       },
     });
 
@@ -63,7 +55,7 @@ export async function PUT(
       // Check for overlapping blocked times (excluding current one)
       const overlapping = await prisma.blockedTime.findFirst({
         where: {
-          userId: user.id,
+          userId: session.user.id,
           id: { not: id },
           OR: [
             {
@@ -126,16 +118,8 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const { id } = params;
@@ -144,7 +128,7 @@ export async function DELETE(
     const existingBlockedTime = await prisma.blockedTime.findFirst({
       where: {
         id,
-        userId: user.id,
+        userId: session.user.id,
       },
     });
 

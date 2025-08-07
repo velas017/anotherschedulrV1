@@ -96,7 +96,18 @@ export async function GET(
       welcomeMessage: null
     };
 
-    return NextResponse.json({
+    // Check CORS for GET requests
+    const origin = request.headers.get('origin');
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+      process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    ];
+    
+    const isAllowed = origin && (
+      allowedOrigins.includes(origin) || 
+      (process.env.NODE_ENV === 'production' && origin.endsWith('.yourdomain.com'))
+    );
+    
+    const response = NextResponse.json({
       categories: categoriesWithServices,
       config: {
         welcomeMessage: config.welcomeMessage,
@@ -106,6 +117,15 @@ export async function GET(
         allowOnlineBooking: config.allowOnlineBooking
       }
     });
+    
+    // Add CORS headers if origin is allowed
+    if (isAllowed) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+    }
+    
+    return response;
 
   } catch (error) {
     console.error('Error fetching public services:', error);
@@ -115,12 +135,28 @@ export async function GET(
 
 // OPTIONS method for CORS support (needed for iframe embedding)
 export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  
+  // Define allowed origins - in production, these should come from environment variables
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+    process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    // Add more allowed origins as needed
+  ];
+  
+  // Check if the origin is allowed
+  const isAllowed = origin && (
+    allowedOrigins.includes(origin) || 
+    // Allow subdomains of your main domain in production
+    (process.env.NODE_ENV === 'production' && origin.endsWith('.yourdomain.com'))
+  );
+  
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': isAllowed ? origin : '',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400', // Cache preflight for 24 hours
     },
   });
 }
