@@ -18,6 +18,28 @@ import {
 import { parseBusinessHours, isWithinBusinessHours, isTimeBlocked } from '@/lib/availability';
 import type { BusinessHours, BlockedTime } from '@/lib/availability';
 
+// Appointment interface for TypeScript
+interface Appointment {
+  id: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  client: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
+  service?: {
+    id: string;
+    name: string;
+    duration: number;
+    price: number;
+  };
+}
+
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState<'week' | 'month' | 'day'>('week');
@@ -28,12 +50,16 @@ const CalendarPage = () => {
   const [businessHours, setBusinessHours] = useState<BusinessHours>({});
   const [isLoadingBusinessHours, setIsLoadingBusinessHours] = useState(true);
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+  // const [selectedTimeSlot, setSelectedTimeSlot] = useState<{date: Date, time: string} | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch business hours and blocked times on component mount
+  // Fetch business hours, blocked times, and appointments on component mount
   useEffect(() => {
     fetchBusinessHours();
     fetchBlockedTimes();
+    fetchAppointments();
   }, [currentDate, viewType]);
 
   // Click outside handler for dropdown
@@ -110,34 +136,118 @@ const CalendarPage = () => {
     }
   };
 
-  // Generate time slots based on business hours or use default
-  const generateTimeSlotsForView = () => {
-    // If still loading business hours, show default slots
-    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
-      return ['8am', '8:30am', '9am', '9:30am', '10am', '10:30am', '11am', '11:30am', 'Noon', '12:30pm', '1pm', '1:30pm', '2pm', '2:30pm', '3pm', '3:30pm', '4pm', '4:30pm', '5pm'];
-    }
-
-    // Generate time slots from 8am to 8pm in 30-minute intervals
-    const slots = [];
-    for (let hour = 8; hour <= 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        let displayTime;
-        if (hour === 12 && minute === 0) {
-          displayTime = 'Noon';
-        } else if (hour === 12 && minute === 30) {
-          displayTime = '12:30pm';
-        } else if (hour > 12) {
-          displayTime = minute === 0 ? `${hour - 12}pm` : `${hour - 12}:30pm`;
-        } else {
-          displayTime = minute === 0 ? `${hour}am` : `${hour}:30am`;
-        }
-        slots.push(displayTime);
+  // Fetch appointments from the API
+  const fetchAppointments = async () => {
+    try {
+      setIsLoadingAppointments(true);
+      
+      // Calculate date range based on current view
+      let startDate, endDate;
+      
+      if (viewType === 'week') {
+        const weekStart = new Date(currentDate);
+        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        startDate = weekStart.toISOString();
+        endDate = weekEnd.toISOString();
+      } else if (viewType === 'month') {
+        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        startDate = monthStart.toISOString();
+        endDate = monthEnd.toISOString();
+      } else {
+        // Day view
+        const dayStart = new Date(currentDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(currentDate);
+        dayEnd.setHours(23, 59, 59, 999);
+        startDate = dayStart.toISOString();
+        endDate = dayEnd.toISOString();
       }
+
+      const response = await fetch(`/api/appointments?startDate=${startDate}&endDate=${endDate}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAppointments(data);
+      } else {
+        console.error('Failed to fetch appointments');
+        setAppointments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setAppointments([]);
+    } finally {
+      setIsLoadingAppointments(false);
+    }
+  };
+
+  // Generate hourly time slots (no more 30-minute intervals)
+  const generateTimeSlotsForView = () => {
+    const slots = [];
+    for (let hour = 8; hour <= 22; hour++) { // 8 AM to 10 PM
+      let displayTime;
+      if (hour === 12) {
+        displayTime = '12 PM';
+      } else if (hour > 12) {
+        displayTime = `${hour - 12} PM`;
+      } else {
+        displayTime = `${hour} AM`;
+      }
+      slots.push(displayTime);
     }
     return slots;
   };
 
   const timeSlots = generateTimeSlotsForView();
+
+  // Calculate precise position and height for appointments
+  const calculateAppointmentStyle = (startTime: string, endTime: string, hourHeight: number = 60) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const startHour = start.getHours();
+    const startMinute = start.getMinutes();
+    const endHour = end.getHours();
+    const endMinute = end.getMinutes();
+    
+    // Calculate position from 8 AM (first hour slot)
+    const baseHour = 8;
+    const hourOffset = startHour - baseHour;
+    const minuteOffset = startMinute / 60;
+    const top = (hourOffset + minuteOffset) * hourHeight;
+    
+    // Calculate height based on duration
+    const durationMinutes = (endHour - startHour) * 60 + (endMinute - startMinute);
+    const height = (durationMinutes / 60) * hourHeight;
+    
+    return {
+      top: `${top}px`,
+      height: `${height}px`,
+      position: 'absolute' as const,
+      left: '4px',
+      right: '4px',
+      zIndex: 10
+    };
+  };
+
+  // Get appointments for a specific day
+  const getAppointmentsForDay = (dayIndex: number) => {
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    const targetDate = new Date(weekStart);
+    targetDate.setDate(weekStart.getDate() + dayIndex);
+    
+    return appointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.startTime);
+      return appointmentDate.getDate() === targetDate.getDate() &&
+             appointmentDate.getMonth() === targetDate.getMonth() &&
+             appointmentDate.getFullYear() === targetDate.getFullYear();
+    });
+  };
 
   // Check if a time slot should be disabled based on business hours and blocked times
   const isTimeSlotAvailable = (date: Date, timeSlot: string) => {
@@ -145,32 +255,25 @@ const CalendarPage = () => {
       return { available: true, reason: null }; // Show all slots while loading
     }
 
-    // Convert time slot string to hour and minute
+    // Convert time slot string to hour
     let hour = 0;
-    let minute = 0;
     
-    if (timeSlot === 'Noon') {
-      hour = 12;
-      minute = 0;
-    } else {
-      // Parse time slots like "11:30am" or "2pm"
-      const timeMatch = timeSlot.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/i);
-      if (timeMatch) {
-        hour = parseInt(timeMatch[1]);
-        minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-        const isPM = timeMatch[3].toLowerCase() === 'pm';
-        
-        if (isPM && hour !== 12) {
-          hour += 12;
-        } else if (!isPM && hour === 12) {
-          hour = 0;
-        }
+    // Parse hourly time slots like "8 AM" or "2 PM"
+    const timeMatch = timeSlot.match(/^(\d{1,2})\s*(AM|PM)$/i);
+    if (timeMatch) {
+      hour = parseInt(timeMatch[1]);
+      const isPM = timeMatch[2].toLowerCase() === 'pm';
+      
+      if (isPM && hour !== 12) {
+        hour += 12;
+      } else if (!isPM && hour === 12) {
+        hour = 0;
       }
     }
 
-    // Create a date object for this time slot
+    // Create a date object for this time slot (beginning of the hour)
     const slotDate = new Date(date);
-    slotDate.setHours(hour, minute, 0, 0);
+    slotDate.setHours(hour, 0, 0, 0);
 
     // Check if blocked
     if (isTimeBlocked(slotDate, blockedTimes)) {
@@ -270,18 +373,34 @@ const CalendarPage = () => {
 
   const weekDates = getWeekDates(currentDate);
 
-  // Sample appointments data (updated to use dynamic dates)
-  const appointments = [
-    {
-      id: 1,
-      client: 'Edna Matias',
-      service: '60 Minute Custom Facial',
-      treatment: 'LED Blue Light Therapy (Acne)',
-      time: '10:30AM-11:45AM',
-      dayIndex: 4, // Thursday (0 = Sunday)
-      color: 'bg-purple-200 border-purple-300'
+  // Helper function to format appointment time display
+  const formatAppointmentTime = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const formatTime = (date: Date) => {
+      const hour = date.getHours();
+      const minute = date.getMinutes();
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const displayMinute = minute.toString().padStart(2, '0');
+      return `${displayHour}:${displayMinute}${ampm}`;
+    };
+    return `${formatTime(start)} - ${formatTime(end)}`;
+  };
+
+  // Get appointment colors based on status or service
+  const getAppointmentColor = (appointment: Appointment) => {
+    switch (appointment.status) {
+      case 'CONFIRMED':
+        return 'bg-green-200 border-green-300 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-200 border-red-300 text-red-800';
+      case 'COMPLETED':
+        return 'bg-blue-200 border-blue-300 text-blue-800';
+      default:
+        return 'bg-orange-200 border-orange-300 text-orange-800';
     }
-  ];
+  };
 
   const formatCurrentPeriod = () => {
     if (viewType === 'week') {
@@ -305,6 +424,37 @@ const CalendarPage = () => {
     return '';
   };
 
+  // Handle appointment refresh after changes
+  const handleAppointmentChange = () => {
+    fetchAppointments();
+  };
+
+  // Handle time slot click for new appointment creation
+  const handleTimeSlotClick = (day: { date: Date; dayNameShort: string; isToday: boolean }, timeSlot: string) => {
+    const availability = isTimeSlotAvailable(day.date, timeSlot);
+    if (availability.available) {
+      // setSelectedTimeSlot({ date: day.date, time: timeSlot });
+      setIsAppointmentPanelOpen(true);
+    }
+  };
+
+  // Calculate overlapping appointments for better positioning
+  const getOverlappingAppointments = (appointment: Appointment, dayAppointments: Appointment[]) => {
+    const appointmentStart = new Date(appointment.startTime);
+    const appointmentEnd = new Date(appointment.endTime);
+    
+    return dayAppointments.filter(apt => {
+      if (apt.id === appointment.id) return false;
+      const aptStart = new Date(apt.startTime);
+      const aptEnd = new Date(apt.endTime);
+      
+      return (
+        (appointmentStart < aptEnd && appointmentEnd > aptStart) ||
+        (aptStart < appointmentEnd && aptEnd > appointmentStart)
+      );
+    });
+  };
+
   // Go to today's date
   const goToToday = () => {
     setCurrentDate(new Date());
@@ -313,7 +463,7 @@ const CalendarPage = () => {
   return (
     <DashboardLayout
       title={formatCurrentPeriod()}
-      subtitle={`${appointments.length} appointments${viewType === 'week' && isCurrentWeek() ? ' • current week' : ''}`}
+      subtitle={`${appointments.length} appointment${appointments.length !== 1 ? 's' : ''}${viewType === 'week' && isCurrentWeek() ? ' • current week' : ''}`}
     >
       <div className="flex flex-col h-full">
         {/* Calendar Controls Header */}
@@ -470,92 +620,126 @@ const CalendarPage = () => {
         <div className="flex-1 bg-white overflow-hidden">
           {viewType === 'week' && (
             <div className="h-full flex flex-col">
-              <div className="grid grid-cols-8 border-b border-gray-200">
-                {/* Empty cell for time column */}
-                <div className="border-r border-gray-200 bg-gray-50 p-3"></div>
+              <div className="grid grid-cols-8 border-b border-gray-300 bg-gray-800">
+                {/* Time column with timezone */}
+                <div className="border-r border-gray-600 p-3 flex flex-col items-center justify-center text-white">
+                  <div className="text-xs font-medium opacity-75">GMT-04</div>
+                </div>
                 
-                {/* Day headers */}
+                {/* Day headers with enhanced styling */}
                 {weekDates.map((day, index) => (
                   <div 
                     key={index} 
-                    className={`border-r border-gray-200 p-3 text-center ${
-                      day.isToday ? 'bg-blue-50' : 'bg-gray-50'
+                    className={`border-r border-gray-600 p-3 text-center ${
+                      day.isToday ? 'bg-gray-700' : 'bg-gray-800'
                     }`}
                   >
-                    <div className={`text-sm font-medium ${
-                      day.isToday ? 'text-blue-600' : 'text-gray-900'
+                    <div className={`text-sm font-medium uppercase tracking-wide ${
+                      day.isToday ? 'text-blue-300' : 'text-white'
                     }`}>
-                      {day.dayNameShort}
+                      {day.dayNameShort.toUpperCase()}
                     </div>
-                    <div className={`text-sm ${
+                    <div className={`text-lg font-bold mt-1 ${
                       day.isToday 
-                        ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
-                        : 'text-gray-500'
+                        ? 'bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' 
+                        : 'text-white'
                     }`}>
                       {day.dayNumber}
                     </div>
-                    {day.isToday && (
-                      <div className="text-xs text-blue-600 mt-1">Today</div>
-                    )}
                   </div>
                 ))}
               </div>
 
-              {/* Time slots and appointment grid */}
-              <div className="flex-1 overflow-y-auto">
-                {timeSlots.map((time, timeIndex) => (
-                  <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100" style={{ minHeight: '40px' }}>
-                    {/* Time label */}
-                    <div className="border-r border-gray-200 bg-gray-50 p-2 text-right">
-                      <span className="text-xs text-gray-600">{time}</span>
+              {/* Time slots and appointment grid with precise positioning */}
+              <div className="flex-1 overflow-y-auto relative" style={{ height: 'calc(100vh - 200px)' }}>
+                {/* Time grid */}
+                <div className="relative" style={{ height: `${timeSlots.length * 60}px` }}>
+                  {timeSlots.map((time, timeIndex) => (
+                    <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100 absolute w-full" 
+                         style={{ 
+                           height: '60px',
+                           top: `${timeIndex * 60}px`
+                         }}>
+                      {/* Time label */}
+                      <div className="border-r border-gray-200 bg-gray-50 px-3 py-1 text-right flex items-start justify-end">
+                        <span className="text-sm font-medium text-gray-700 leading-tight">{time}</span>
+                      </div>
+                      
+                      {/* Day columns */}
+                      {weekDates.map((day, dayIndex) => {
+                        const availability = isTimeSlotAvailable(day.date, time);
+                        return (
+                          <div 
+                            key={dayIndex} 
+                            className={`border-r border-gray-100 relative transition-colors ${
+                              day.isToday ? 'bg-blue-50/30' : ''
+                            } ${!availability.available ? (availability.reason === 'blocked' ? 'bg-red-50/50' : 'bg-gray-100/50') : ''} hover:bg-gray-50/80 cursor-pointer`}
+                            onClick={() => handleTimeSlotClick(day, time)}
+                          >
+                            {/* Show unavailable indicator */}
+                            {!availability.available && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className={`text-xs font-medium ${
+                                  availability.reason === 'blocked' ? 'text-red-600' : 'text-gray-400'
+                                }`}>
+                                  {availability.reason === 'blocked' ? 'Blocked' : 'Unavailable'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    
-                    {/* Day columns */}
-                    {weekDates.map((day, dayIndex) => {
-                      const availability = isTimeSlotAvailable(day.date, time);
+                  ))}
+                  
+                  {/* Render appointments with precise positioning */}
+                  {weekDates.map((day, dayIndex) => {
+                    const dayAppointments = getAppointmentsForDay(dayIndex);
+                    return dayAppointments.map((appointment) => {
+                      const style = calculateAppointmentStyle(appointment.startTime, appointment.endTime, 60);
+                      const colorClass = getAppointmentColor(appointment);
+                      
+                      const overlapping = getOverlappingAppointments(appointment, dayAppointments);
+                      const overlapIndex = dayAppointments
+                        .filter(apt => new Date(apt.startTime) <= new Date(appointment.startTime))
+                        .indexOf(appointment);
+                      
                       return (
                         <div 
-                          key={dayIndex} 
-                          className={`border-r border-gray-100 relative p-2 ${
-                            day.isToday ? 'bg-blue-50/30' : ''
-                          } ${!availability.available ? (availability.reason === 'blocked' ? 'bg-red-50' : 'bg-gray-100/50') : ''}`}
+                          key={appointment.id}
+                          className={`${colorClass} rounded-lg border shadow-sm p-2 text-xs font-medium cursor-pointer hover:shadow-md transition-all hover:z-20`}
+                          style={{
+                            ...style,
+                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * 0.5)}%`,
+                            width: `${(100 / 8) - (overlapping.length > 0 ? 1 : 0)}%`,
+                            marginLeft: '2px',
+                            marginRight: '2px'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // TODO: Open appointment edit panel with appointment data
+                            console.log('Edit appointment:', appointment.id);
+                          }}
                         >
-                          {/* Render appointment if it matches this day and time */}
-                          {appointments.map((appointment) => (
-                            appointment.dayIndex === dayIndex && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
-                              <div 
-                                key={appointment.id}
-                                className={`${appointment.color} p-3 rounded-lg text-xs relative z-10 border`}
-                                style={{ minHeight: '120px' }}
-                              >
-                                <div className="font-medium text-gray-900 mb-1">
-                                  {appointment.client}: {appointment.service}
-                                </div>
-                                <div className="text-gray-700 mb-1">
-                                  {appointment.treatment}
-                                </div>
-                                <div className="text-gray-600">
-                                  {appointment.time}
-                                </div>
-                              </div>
-                            )
-                          ))}
-                          
-                          {/* Show unavailable indicator */}
-                          {!availability.available && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className={`text-xs font-medium ${
-                                availability.reason === 'blocked' ? 'text-red-600' : 'text-gray-400'
-                              }`}>
-                                {availability.reason === 'blocked' ? 'Blocked' : 'Unavailable'}
-                              </span>
+                          <div className="font-semibold truncate leading-tight">
+                            {appointment.client.name}
+                          </div>
+                          <div className="truncate text-xs opacity-90 leading-tight">
+                            {appointment.service?.name || appointment.title}
+                          </div>
+                          <div className="text-xs opacity-75 mt-1 leading-tight">
+                            {formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                          </div>
+                          {appointment.service && (
+                            <div className="text-xs opacity-60 mt-1">
+                              ${appointment.service.price}
                             </div>
                           )}
                         </div>
                       );
-                    })}
-                  </div>
-                ))}
+                    });
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -700,8 +884,9 @@ const CalendarPage = () => {
         isOpen={isBlockOffTimePanelOpen}
         onClose={() => setIsBlockOffTimePanelOpen(false)}
         onSuccess={() => {
-          // Refresh blocked times after successful creation
+          // Refresh blocked times and appointments after successful creation
           fetchBlockedTimes();
+          handleAppointmentChange();
         }}
       />
     </DashboardLayout>
