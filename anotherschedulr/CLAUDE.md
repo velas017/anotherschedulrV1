@@ -43,6 +43,41 @@ This is a Next.js 15 application using App Router with the following stack:
 ### Database Schema
 Main entities: User, Client, Service, Appointment (see `prisma/schema.prisma`)
 
+## 🔴 CRITICAL: Session Management & Documentation
+
+**MANDATORY ACTIONS FOR EVERY SESSION:**
+
+### Start of Session
+1. **ALWAYS** read `PROJECT_STATUS.md` first to understand:
+   - Current project state and phase
+   - Last session's work
+   - Active sprint items
+   - Known issues and blockers
+   - Next steps identified
+
+2. Review any specific area mentioned in the "Next Steps" section
+
+### During Session
+1. Keep `PROJECT_STATUS.md` in mind for context
+2. Update the todo list frequently as you work
+3. Document any significant decisions or changes
+
+### End of Session
+1. **ALWAYS** update `PROJECT_STATUS.md` with:
+   - Date and summary of work completed
+   - Any new issues discovered
+   - Next steps for the following session
+   - Updates to the Recent Changes Log
+   - Feature status updates (completed/in-progress)
+
+2. Use the update template provided at the bottom of PROJECT_STATUS.md
+
+### Quick Reference
+- **Project Status**: `PROJECT_STATUS.md` - Current state, architecture, progress
+- **Technical Guidance**: `CLAUDE.md` - Development standards and requirements
+- **Component Docs**: `COMPONENT_ARCHITECTURE.md` - Component details
+- **Security**: `SECURITY.md` - Security requirements and audit results
+
 ## Development Guidelines
 
 ### Database Integration
