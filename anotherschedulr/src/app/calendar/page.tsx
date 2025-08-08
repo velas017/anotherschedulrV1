@@ -52,6 +52,7 @@ const CalendarPage = () => {
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+  const [focusedAppointmentId, setFocusedAppointmentId] = useState<string | null>(null);
   // const [selectedTimeSlot, setSelectedTimeSlot] = useState<{date: Date, time: string} | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -431,6 +432,9 @@ const CalendarPage = () => {
 
   // Handle time slot click for new appointment creation
   const handleTimeSlotClick = (day: { date: Date; dayNameShort: string; isToday: boolean }, timeSlot: string) => {
+    // Clear focused appointment when clicking on time slots
+    setFocusedAppointmentId(null);
+    
     const availability = isTimeSlotAvailable(day.date, timeSlot);
     if (availability.available) {
       // setSelectedTimeSlot({ date: day.date, time: timeSlot });
@@ -653,7 +657,16 @@ const CalendarPage = () => {
               {/* Time slots and appointment grid with precise positioning */}
               <div className="flex-1 overflow-y-auto relative" style={{ height: 'calc(100vh - 200px)' }}>
                 {/* Time grid */}
-                <div className="relative" style={{ height: `${timeSlots.length * 60}px` }}>
+                <div 
+                  className="relative" 
+                  style={{ height: `${timeSlots.length * 60}px` }}
+                  onClick={(e) => {
+                    // Clear focused appointment when clicking on calendar background
+                    if (e.target === e.currentTarget) {
+                      setFocusedAppointmentId(null);
+                    }
+                  }}
+                >
                   {timeSlots.map((time, timeIndex) => (
                     <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100 absolute w-full" 
                          style={{ 
@@ -704,37 +717,59 @@ const CalendarPage = () => {
                         .filter(apt => new Date(apt.startTime) <= new Date(appointment.startTime))
                         .indexOf(appointment);
                       
+                      const isFocused = focusedAppointmentId === appointment.id;
+                      const baseZIndex = 10;
+                      const focusedZIndex = 40;
+                      
                       return (
                         <div 
                           key={appointment.id}
-                          className={`${colorClass} rounded-lg border shadow-sm p-2 text-xs font-medium cursor-pointer hover:shadow-md transition-all hover:z-20`}
+                          className={`${colorClass} rounded-lg border shadow-sm cursor-pointer hover:shadow-lg transition-all ${
+                            isFocused ? 'ring-2 ring-blue-400 shadow-lg' : ''
+                          }`}
                           style={{
                             ...style,
-                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * 0.5)}%`,
-                            width: `${(100 / 8) - (overlapping.length > 0 ? 1 : 0)}%`,
+                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * 1)}%`,
+                            width: `${Math.max((100 / 8) - (overlapping.length > 0 ? 2 : 1), 8)}%`,
+                            minWidth: '120px',
+                            maxWidth: `${(100 / 8) - 1}%`,
                             marginLeft: '2px',
-                            marginRight: '2px'
+                            marginRight: '2px',
+                            zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
+                            overflow: 'hidden',
+                            padding: '6px 8px',
+                            boxSizing: 'border-box'
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // TODO: Open appointment edit panel with appointment data
-                            console.log('Edit appointment:', appointment.id);
+                            setFocusedAppointmentId(
+                              focusedAppointmentId === appointment.id ? null : appointment.id
+                            );
                           }}
                         >
-                          <div className="font-semibold truncate leading-tight">
-                            {appointment.client.name}
-                          </div>
-                          <div className="truncate text-xs opacity-90 leading-tight">
-                            {appointment.service?.name || appointment.title}
-                          </div>
-                          <div className="text-xs opacity-75 mt-1 leading-tight">
-                            {formatAppointmentTime(appointment.startTime, appointment.endTime)}
-                          </div>
-                          {appointment.service && (
-                            <div className="text-xs opacity-60 mt-1">
-                              ${appointment.service.price}
+                          <div className="overflow-hidden">
+                            {/* Client Name */}
+                            <div className="font-semibold text-xs leading-tight truncate mb-0.5" title={appointment.client.name}>
+                              {appointment.client.name}
                             </div>
-                          )}
+                            
+                            {/* Service Name */}
+                            <div className="text-xs opacity-90 leading-tight truncate mb-1" title={appointment.service?.name || appointment.title}>
+                              {appointment.service?.name || appointment.title}
+                            </div>
+                            
+                            {/* Time Range */}
+                            <div className="text-xs opacity-75 leading-tight truncate mb-0.5" title={formatAppointmentTime(appointment.startTime, appointment.endTime)}>
+                              {formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                            </div>
+                            
+                            {/* Price */}
+                            {appointment.service && (
+                              <div className="text-xs opacity-60 leading-tight" title={`$${appointment.service.price}`}>
+                                ${appointment.service.price}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     });
