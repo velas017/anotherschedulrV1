@@ -305,6 +305,107 @@ Required in `.env.local`:
 - Check color contrast ratios
 - Validate with automated tools (axe-core, Lighthouse)
 
+## Mobile Responsive Architecture Requirements
+
+**CRITICAL**: This application must provide an excellent mobile experience across all devices and screen sizes with a mobile-first approach.
+
+### Mobile-First Design Strategy
+- **Primary Focus**: Mobile devices (320px - 768px) are the primary target
+- **Progressive Enhancement**: Desktop features built on top of mobile foundation
+- **Breakpoints**: 
+  - Mobile: 320px - 768px (smartphones, primary development target)
+  - Tablet: 768px - 1024px (tablets, secondary optimization)
+  - Desktop: 1024px+ (desktops, enhanced experience)
+- **Design Philosophy**: If it works great on mobile, it will work everywhere
+
+### Touch Interface Requirements
+- **Touch Targets**: Minimum 44×44px tap targets with 8px spacing between interactive elements
+- **Gesture Support**: 
+  - Swipe navigation for calendar views
+  - Pull-to-refresh on data pages
+  - Pinch-to-zoom where appropriate (calendar, images)
+  - Long-press for context menus
+- **Touch Feedback**: Visual feedback for all touch interactions (hover states, active states)
+- **Orientation Support**: Full functionality in both portrait and landscape modes
+
+### Mobile Performance Requirements
+- **Initial Load**: Under 3 seconds on 3G networks (Fast 3G: 1.6Mbps/750kbps)
+- **Bundle Size**: 
+  - JavaScript bundles under 200KB compressed per route
+  - CSS under 50KB compressed
+  - Critical path resources under 14KB (first TCP round trip)
+- **Image Optimization**: 
+  - WebP format with JPEG fallback
+  - Responsive image sizing with srcset
+  - Lazy loading for non-critical images
+- **Resource Hints**: Preload critical resources, prefetch likely next pages
+
+### Mobile Calendar Requirements
+- **Calendar Views**:
+  - Mobile: Single-day view as primary, week view as horizontal scroll
+  - Tablet: Week view optimized for touch
+  - Desktop: Week/month views with full functionality
+- **Touch Interactions**:
+  - Tap empty time slot to create appointment
+  - Tap appointment to view/edit details
+  - Drag appointments to reschedule (with haptic feedback where available)
+  - Swipe between days/weeks
+- **Appointment Display**:
+  - Larger text on mobile for readability
+  - Essential information priority (client name, time, service)
+  - Expandable details for additional information
+- **Navigation**: Sticky date picker, easy month/week switching
+
+### Responsive Component Architecture
+- **Navigation**: 
+  - Mobile: Collapsible hamburger menu with slide-out drawer
+  - Tablet: Collapsible sidebar
+  - Desktop: Full sidebar navigation
+- **Forms**: 
+  - Mobile: Single-column layout, larger input fields, appropriate input types
+  - Tablet/Desktop: Multi-column where appropriate
+- **Data Tables**: 
+  - Mobile: Card layout or horizontal scroll with sticky columns
+  - Tablet/Desktop: Full table layout
+- **Modals**: 
+  - Mobile: Full-screen overlays
+  - Tablet/Desktop: Centered modals with backdrop
+
+### Mobile Development Standards
+- **Viewport Meta Tag**: Properly configured for responsive design
+- **CSS Approach**: Mobile-first media queries with min-width breakpoints
+- **JavaScript**: Touch event handling with mouse fallbacks
+- **Testing**: Real device testing required, not just browser dev tools
+- **Performance Budget**: Monitor and enforce mobile performance metrics
+
+### Cross-Platform Compatibility
+- **iOS Safari**: Primary mobile browser target
+- **Chrome Mobile**: Android primary target  
+- **Samsung Internet**: Android secondary target
+- **Edge Mobile**: Windows phone support where applicable
+- **PWA Support**: Progressive Web App capabilities for native-like experience
+
+### Mobile UX Patterns
+- **Loading States**: Skeleton screens for better perceived performance
+- **Offline Support**: Basic functionality without network connection
+- **Error Handling**: Mobile-friendly error messages and retry mechanisms
+- **Content Hierarchy**: Information prioritization for small screens
+- **Typography**: Readable font sizes (minimum 16px to prevent zoom)
+
+### Mobile Testing Requirements
+- **Device Testing**: Test on real devices across iOS and Android
+- **Network Testing**: Test on slow connections (Slow 3G, offline)
+- **Orientation Testing**: Verify functionality in both orientations
+- **Touch Testing**: Verify all touch interactions work properly
+- **Performance Testing**: Lighthouse mobile scores, real device metrics
+
+### Development Priorities for Mobile
+- **Core Functionality First**: Essential features work perfectly on mobile
+- **Performance**: Every feature decision considers mobile performance impact
+- **Accessibility**: Touch accessibility, screen reader compatibility
+- **Battery Usage**: Efficient code to preserve device battery life
+- **Data Usage**: Minimize data consumption for users with limited plans
+
 ## Development Notes
 
 ### Current Development Environment

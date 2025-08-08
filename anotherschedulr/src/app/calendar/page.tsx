@@ -18,6 +18,26 @@ import {
 import { parseBusinessHours, isWithinBusinessHours, isTimeBlocked } from '@/lib/availability';
 import type { BusinessHours, BlockedTime } from '@/lib/availability';
 
+// Hook for responsive breakpoint detection
+const useResponsive = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+    
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  return { isMobile, isTablet, isDesktop: !isMobile && !isTablet };
+};
+
 // Appointment interface for TypeScript
 interface Appointment {
   id: string;
@@ -41,6 +61,9 @@ interface Appointment {
 }
 
 const CalendarPage = () => {
+  // Responsive breakpoint detection
+  const { isMobile, isTablet, isDesktop } = useResponsive();
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState<'week' | 'month' | 'day'>('week');
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,9 +244,13 @@ const CalendarPage = () => {
     const minuteOffset = startMinute / 60;
     const top = (hourOffset + minuteOffset) * hourHeight;
     
-    // Calculate height based on duration
+    // Calculate height based on duration with mobile-responsive minimum
     const durationMinutes = (endHour - startHour) * 60 + (endMinute - startMinute);
-    const height = (durationMinutes / 60) * hourHeight;
+    const naturalHeight = (durationMinutes / 60) * hourHeight;
+    
+    // Mobile-responsive minimum heights to ensure all content fits
+    const minHeight = isMobile ? 75 : 68; // Larger minimum on mobile for touch targets
+    const height = Math.max(naturalHeight, minHeight);
     
     return {
       top: `${top}px`,
@@ -729,15 +756,18 @@ const CalendarPage = () => {
                           }`}
                           style={{
                             ...style,
-                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * 1)}%`,
-                            width: `${Math.max((100 / 8) - (overlapping.length > 0 ? 2 : 1), 8)}%`,
-                            minWidth: '120px',
-                            maxWidth: `${(100 / 8) - 1}%`,
+                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * (isMobile ? 0.8 : 1))}%`,
+                            width: `${Math.max(
+                              (100 / 8) - (overlapping.length > 0 ? (isMobile ? 1.5 : 2) : (isMobile ? 0.5 : 1)), 
+                              isMobile ? 12 : 10
+                            )}%`,
+                            minWidth: isMobile ? '140px' : '120px',
+                            maxWidth: `${(100 / 8) - 0.5}%`,
                             marginLeft: '2px',
                             marginRight: '2px',
                             zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
                             overflow: 'hidden',
-                            padding: '6px 8px',
+                            padding: isMobile ? '8px 10px' : '6px 8px',
                             boxSizing: 'border-box'
                           }}
                           onClick={(e) => {
@@ -747,28 +777,51 @@ const CalendarPage = () => {
                             );
                           }}
                         >
-                          <div className="overflow-hidden">
-                            {/* Client Name */}
-                            <div className="font-semibold text-xs leading-tight truncate mb-0.5" title={appointment.client.name}>
+                          <div className="overflow-hidden h-full flex flex-col justify-between">
+                            {/* Client Name - Always visible */}
+                            <div 
+                              className={`font-semibold leading-tight line-clamp-1 mb-1 ${
+                                isMobile ? 'text-sm' : 'text-xs'
+                              }`} 
+                              title={appointment.client.name}
+                            >
                               {appointment.client.name}
                             </div>
                             
-                            {/* Service Name */}
-                            <div className="text-xs opacity-90 leading-tight truncate mb-1" title={appointment.service?.name || appointment.title}>
+                            {/* Service Name - Always visible */}
+                            <div 
+                              className={`opacity-90 leading-tight line-clamp-1 mb-1 ${
+                                isMobile ? 'text-xs' : 'text-xs'
+                              }`} 
+                              title={appointment.service?.name || appointment.title}
+                            >
                               {appointment.service?.name || appointment.title}
                             </div>
                             
-                            {/* Time Range */}
-                            <div className="text-xs opacity-75 leading-tight truncate mb-0.5" title={formatAppointmentTime(appointment.startTime, appointment.endTime)}>
-                              {formatAppointmentTime(appointment.startTime, appointment.endTime)}
-                            </div>
-                            
-                            {/* Price */}
-                            {appointment.service && (
-                              <div className="text-xs opacity-60 leading-tight" title={`$${appointment.service.price}`}>
-                                ${appointment.service.price}
+                            {/* Time and Price Row - Flexible layout */}
+                            <div className={`flex justify-between items-end mt-auto gap-1 ${
+                              isMobile ? 'text-xs' : 'text-xs'
+                            }`}>
+                              {/* Time Range */}
+                              <div 
+                                className="opacity-75 leading-tight flex-1 min-w-0" 
+                                title={formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                              >
+                                <div className="truncate">
+                                  {formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                                </div>
                               </div>
-                            )}
+                              
+                              {/* Price - Always visible */}
+                              {appointment.service && (
+                                <div 
+                                  className="opacity-90 font-medium whitespace-nowrap ml-1" 
+                                  title={`$${appointment.service.price}`}
+                                >
+                                  ${appointment.service.price}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
