@@ -401,19 +401,24 @@ const CalendarPage = () => {
 
   const weekDates = getWeekDates(currentDate);
 
-  // Helper function to format appointment time display
+  // Helper function to format appointment time display - clean format with no spaces
   const formatAppointmentTime = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
+    
     const formatTime = (date: Date) => {
       const hour = date.getHours();
       const minute = date.getMinutes();
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-      const displayMinute = minute.toString().padStart(2, '0');
-      return `${displayHour}:${displayMinute}${ampm}`;
+      
+      // Always show minutes for consistency
+      const displayMinute = `:${minute.toString().padStart(2, '0')}`;
+      return `${displayHour}${displayMinute}${ampm}`;
     };
-    return `${formatTime(start)} - ${formatTime(end)}`;
+    
+    // NO SPACES around dash to match screenshot format: "2:15PM-3:25PM"
+    return `${formatTime(start)}-${formatTime(end)}`;
   };
 
   // Get appointment colors based on status or service
@@ -756,13 +761,13 @@ const CalendarPage = () => {
                           }`}
                           style={{
                             ...style,
-                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * (isMobile ? 0.8 : 1))}%`,
+                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * (isMobile ? 0.3 : 0.5))}%`,
                             width: `${Math.max(
-                              (100 / 8) - (overlapping.length > 0 ? (isMobile ? 1.5 : 2) : (isMobile ? 0.5 : 1)), 
-                              isMobile ? 12 : 10
+                              (100 / 8) - (overlapping.length > 0 ? (isMobile ? 0.5 : 1) : 0), 
+                              isMobile ? 16 : 15
                             )}%`,
-                            minWidth: isMobile ? '140px' : '120px',
-                            maxWidth: `${(100 / 8) - 0.5}%`,
+                            minWidth: isMobile ? '220px' : '200px',
+                            maxWidth: '25%',
                             marginLeft: '2px',
                             marginRight: '2px',
                             zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
@@ -777,50 +782,27 @@ const CalendarPage = () => {
                             );
                           }}
                         >
-                          <div className="overflow-hidden h-full flex flex-col justify-between">
-                            {/* Client Name - Always visible */}
-                            <div 
-                              className={`font-semibold leading-tight line-clamp-1 mb-1 ${
-                                isMobile ? 'text-sm' : 'text-xs'
-                              }`} 
-                              title={appointment.client.name}
-                            >
-                              {appointment.client.name}
-                            </div>
-                            
-                            {/* Service Name - Always visible */}
-                            <div 
-                              className={`opacity-90 leading-tight line-clamp-1 mb-1 ${
-                                isMobile ? 'text-xs' : 'text-xs'
-                              }`} 
-                              title={appointment.service?.name || appointment.title}
-                            >
-                              {appointment.service?.name || appointment.title}
-                            </div>
-                            
-                            {/* Time and Price Row - Flexible layout */}
-                            <div className={`flex justify-between items-end mt-auto gap-1 ${
-                              isMobile ? 'text-xs' : 'text-xs'
-                            }`}>
-                              {/* Time Range */}
+                          <div className="h-full flex flex-col px-2 py-1">
+                            {/* Text content - can expand with wrapping */}
+                            <div className="flex-1 pb-1">
                               <div 
-                                className="opacity-75 leading-tight flex-1 min-w-0" 
-                                title={formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                                className={`font-semibold leading-tight break-words hyphens-auto ${
+                                  isMobile ? 'text-sm' : 'text-xs'
+                                }`}
+                                title={`${appointment.client.name}: ${appointment.service?.name || appointment.title}`}
                               >
-                                <div className="truncate">
-                                  {formatAppointmentTime(appointment.startTime, appointment.endTime)}
-                                </div>
+                                {appointment.client.name}: {appointment.service?.name || appointment.title}
                               </div>
-                              
-                              {/* Price - Always visible */}
-                              {appointment.service && (
-                                <div 
-                                  className="opacity-90 font-medium whitespace-nowrap ml-1" 
-                                  title={`$${appointment.service.price}`}
-                                >
-                                  ${appointment.service.price}
-                                </div>
-                              )}
+                            </div>
+                            
+                            {/* Time - always at bottom */}
+                            <div 
+                              className={`leading-tight whitespace-nowrap ${
+                                isMobile ? 'text-xs' : 'text-xs'
+                              }`}
+                              title={formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                            >
+                              {formatAppointmentTime(appointment.startTime, appointment.endTime)}
                             </div>
                           </div>
                         </div>
