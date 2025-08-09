@@ -508,7 +508,7 @@ const CalendarPage = () => {
             <div className="flex items-center space-x-4">
               <button 
                 onClick={() => setIsBlockOffTimePanelOpen(true)}
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
               >
                 <Clock className="mr-2 h-4 w-4" />
                 BLOCK OFF TIME
@@ -516,7 +516,7 @@ const CalendarPage = () => {
               
               <button 
                 onClick={() => setIsAppointmentPanelOpen(true)}
-                className="flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800"
+                className="flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 cursor-pointer"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 ADD NEW
@@ -543,14 +543,14 @@ const CalendarPage = () => {
                     }
                     setCurrentDate(newDate);
                   }}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </button>
                 
                 <button 
                   onClick={goToToday}
-                  className="px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+                  className="px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   TODAY
                 </button>
@@ -567,7 +567,7 @@ const CalendarPage = () => {
                     }
                     setCurrentDate(newDate);
                   }}
-                  className="p-1 hover:bg-gray-100 rounded"
+                  className="p-1 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   <ChevronRight className="h-5 w-5 text-gray-600" />
                 </button>
@@ -577,7 +577,7 @@ const CalendarPage = () => {
                 <div ref={dropdownRef} className="relative">
                   <button 
                     onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
-                    className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border"
+                    className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border cursor-pointer"
                   >
                     {viewType === 'week' && 'Week View'}
                     {viewType === 'month' && 'Month View'}
@@ -592,7 +592,7 @@ const CalendarPage = () => {
                           setViewType('day');
                           setIsViewDropdownOpen(false);
                         }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         Day View
@@ -602,7 +602,7 @@ const CalendarPage = () => {
                           setViewType('week');
                           setIsViewDropdownOpen(false);
                         }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />
                         Week View
@@ -612,7 +612,7 @@ const CalendarPage = () => {
                           setViewType('month');
                           setIsViewDropdownOpen(false);
                         }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       >
                         <Calendar className="mr-2 h-4 w-4" />
                         Month View
@@ -621,12 +621,12 @@ const CalendarPage = () => {
                   )}
                 </div>
                 
-                <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border">
+                <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border cursor-pointer">
                   All calendars
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
                 
-                <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border">
+                <button className="flex items-center px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded border cursor-pointer">
                   1x
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -645,7 +645,7 @@ const CalendarPage = () => {
                 />
               </div>
               
-              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded">
+              <button className="p-2 text-gray-600 hover:bg-gray-100 rounded cursor-pointer">
                 <Printer className="h-5 w-5" />
               </button>
             </div>

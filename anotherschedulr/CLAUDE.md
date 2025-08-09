@@ -134,6 +134,39 @@ export async function GET(req: Request) {
 - **Tenant Isolation**: Always filter by `userId: session.user.id`
 - **Error Handling**: Log errors and return appropriate HTTP status codes
 
+### UI/UX Standards
+
+#### Interactive Elements
+**CRITICAL**: All clickable elements must have visual feedback to indicate they are interactive.
+
+- **Cursor Pointer**: Every element with an `onClick` handler MUST include `cursor-pointer` class
+- **Hover States**: Interactive elements should have hover effects (background, color, or opacity changes)
+- **Focus States**: Keyboard-navigable elements must have visible focus indicators
+- **Active States**: Provide visual feedback when elements are being clicked/pressed
+
+Example patterns:
+```tsx
+// ✅ Correct - has cursor-pointer for clickable element
+<button 
+  onClick={handleClick}
+  className="cursor-pointer hover:bg-gray-100 focus:ring-2 ..."
+>
+
+// ❌ Incorrect - missing cursor-pointer
+<button 
+  onClick={handleClick}
+  className="hover:bg-gray-100 ..."
+>
+
+// ✅ Correct - clickable div with proper indicators
+<div 
+  onClick={handleSelect}
+  className="cursor-pointer hover:shadow-lg transition-all ..."
+>
+```
+
+This ensures better accessibility and user experience by making interactive elements immediately recognizable.
+
 ### Environment Variables
 Required in `.env.local`:
 - `DATABASE_URL` - SQLite or PostgreSQL connection

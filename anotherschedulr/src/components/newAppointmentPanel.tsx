@@ -137,16 +137,16 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
     <>
       {/* Slide-out Panel */}
       <div 
-        className={`fixed right-0 top-0 min-h-full w-[480px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed right-0 top-0 h-screen w-[480px] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[9999] flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="bg-gray-50 border-b border-gray-200">
+        <div className="bg-gray-50 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between p-4">
             <button 
               onClick={onClose}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5 mr-1" />
               <span className="text-sm font-medium">Back</span>
@@ -161,13 +161,13 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
         </div>
 
         {/* Form Content */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-1">
             {/* Appointment Type Section - Expandable */}
             <div className="relative">
               <button
                 onClick={() => setIsAppointmentTypeExpanded(!isAppointmentTypeExpanded)}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group"
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group cursor-pointer"
               >
                 <div className="flex flex-col items-start">
                   <span className="text-gray-900 font-medium text-left">
@@ -227,7 +227,7 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
                               <button
                                 key={service.id}
                                 onClick={() => handleServiceSelect(service)}
-                                className={`w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                                className={`w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer ${
                                   selectedService?.id === service.id ? 'bg-red-50' : ''
                                 }`}
                               >
@@ -271,7 +271,7 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
             <div className="w-full">
               <button
                 onClick={() => setIsClientNameExpanded(!isClientNameExpanded)}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group"
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group cursor-pointer"
               >
                 <div className="flex flex-col items-start">
                   <span className="text-gray-900 font-medium text-left">
@@ -369,7 +369,7 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
               <button
                 key={section.id}
                 onClick={section.onClick}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group"
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-lg group cursor-pointer"
               >
                 <span className="text-gray-900 font-medium text-left">
                   {section.label}
@@ -381,10 +381,10 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-200 p-6 bg-gray-50">
+        <div className="border-t border-gray-200 p-6 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <button 
-              className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+              className="flex items-center px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium cursor-pointer"
             >
               <span>Schedule Appointment</span>
               <ChevronDown className="w-4 h-4 ml-2" />
@@ -392,7 +392,7 @@ const NewAppointmentPanel: React.FC<NewAppointmentPanelProps> = ({ isOpen, onClo
 
             <button 
               onClick={onClose}
-              className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              className="text-gray-600 hover:text-gray-900 font-medium transition-colors cursor-pointer"
             >
               Cancel
             </button>
