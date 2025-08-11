@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft, 
   Monitor, 
   Smartphone, 
   Settings,
   Palette,
-  Code,
   Link,
   Plus,
   Eye
@@ -37,12 +37,34 @@ interface ServiceCategory {
 }
 
 const SchedulingPageBuilder = () => {
-  const [activeTab, setActiveTab] = useState<'preview' | 'styles' | 'settings' | 'css' | 'link'>('preview');
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'preview' | 'styles' | 'settings' | 'link'>('preview');
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFontFamily, setSelectedFontFamily] = useState<string>('Inter');
+
+  // Load saved font family from localStorage
+  useEffect(() => {
+    const savedFont = localStorage.getItem('schedulingPageFontFamily');
+    if (savedFont) {
+      setSelectedFontFamily(savedFont);
+    }
+  }, []);
+
+  // Load Google Fonts for preview
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@400;500;600&family=Open+Sans:wght@400;500;600&family=Lato:wght@400;500;600&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   // Fetch services and categories
   useEffect(() => {
@@ -77,7 +99,6 @@ const SchedulingPageBuilder = () => {
     { id: 'preview', label: 'Preview', icon: Eye },
     { id: 'styles', label: 'Styles', icon: Palette },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'css', label: 'Advanced CSS', icon: Code },
     { id: 'link', label: 'Link', icon: Link }
   ];
 
@@ -100,14 +121,22 @@ const SchedulingPageBuilder = () => {
     }));
   };
 
+  const handleFontFamilyChange = (font: string) => {
+    setSelectedFontFamily(font);
+    // Save to localStorage for persistence
+    localStorage.setItem('schedulingPageFontFamily', font);
+  };
+
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar - Editor */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <button className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer">
               <ChevronLeft className="w-5 h-5 mr-1" />
               <span className="text-sm font-medium">BACK</span>
             </button>
@@ -116,18 +145,18 @@ const SchedulingPageBuilder = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="flex flex-col">
+        <div className="p-6">
+          <nav className="space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center px-4 py-3 text-sm font-medium border-b border-gray-100 transition-colors ${
+                  className={`flex items-center w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                     activeTab === tab.id
-                      ? 'bg-gray-50 text-gray-900 border-l-2 border-l-blue-500'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   <Icon className="w-4 h-4 mr-3" />
@@ -139,40 +168,10 @@ const SchedulingPageBuilder = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'preview' && (
             <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Service Categories</h3>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <div className="font-medium text-sm">{category.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {category.services?.length || 0} services
-                        </div>
-                      </div>
-                      <button className="px-3 py-1 text-xs bg-gray-600 text-white rounded">
-                        SELECT
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <button className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Category
-                </button>
-              </div>
-
-              <div>
-                <button className="w-full text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                  SHOW ALL APPOINTMENTS
-                </button>
-              </div>
+              {/* Preview tab content - currently minimal */}
             </div>
           )}
 
@@ -202,12 +201,22 @@ const SchedulingPageBuilder = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Font Family
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                  <option value="Lato">Lato</option>
+                <select 
+                  value={selectedFontFamily}
+                  onChange={(e) => handleFontFamilyChange(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    hover:border-gray-400 transition-colors duration-200 cursor-pointer"
+                  style={{ fontFamily: selectedFontFamily }}
+                >
+                  <option value="Inter" style={{ fontFamily: 'Inter' }}>Inter</option>
+                  <option value="Roboto" style={{ fontFamily: 'Roboto' }}>Roboto</option>
+                  <option value="Open Sans" style={{ fontFamily: 'Open Sans' }}>Open Sans</option>
+                  <option value="Lato" style={{ fontFamily: 'Lato' }}>Lato</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Preview: <span style={{ fontFamily: selectedFontFamily }}>The quick brown fox jumps over the lazy dog</span>
+                </p>
               </div>
             </div>
           )}
@@ -246,19 +255,6 @@ const SchedulingPageBuilder = () => {
             </div>
           )}
 
-          {activeTab === 'css' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Custom CSS
-              </label>
-              <textarea
-                placeholder="/* Add your custom CSS here */"
-                rows={10}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-              />
-            </div>
-          )}
-
           {activeTab === 'link' && (
             <div className="space-y-4">
               <div>
@@ -292,7 +288,7 @@ const SchedulingPageBuilder = () => {
         {/* Preview Header */}
         <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
           <div className="flex items-center justify-between">
-            <button className="px-4 py-2 bg-black text-white text-xs font-medium rounded hover:bg-gray-800 transition-colors">
+            <button className="px-4 py-2 bg-black text-white text-xs font-medium rounded hover:bg-gray-800 transition-colors cursor-pointer">
               EDIT TEXT
             </button>
             
@@ -303,7 +299,7 @@ const SchedulingPageBuilder = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setPreviewDevice('desktop')}
-                className={`p-2 rounded transition-colors ${
+                className={`p-2 rounded transition-colors cursor-pointer ${
                   previewDevice === 'desktop' 
                     ? 'bg-white text-gray-900 shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
@@ -313,7 +309,7 @@ const SchedulingPageBuilder = () => {
               </button>
               <button
                 onClick={() => setPreviewDevice('mobile')}
-                className={`p-2 rounded transition-colors ${
+                className={`p-2 rounded transition-colors cursor-pointer ${
                   previewDevice === 'mobile' 
                     ? 'bg-white text-gray-900 shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
@@ -332,9 +328,12 @@ const SchedulingPageBuilder = () => {
 
         {/* Preview Content */}
         <div className="flex-1 bg-gray-100 p-8 overflow-auto">
-          <div className={`mx-auto bg-white shadow-sm ${
-            previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl'
-          }`}>
+          <div 
+            className={`mx-auto bg-white shadow-sm ${
+              previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl'
+            }`}
+            style={{ fontFamily: selectedFontFamily }}
+          >
 
             {/* Category Selector */}
             <div className="p-6">
@@ -363,7 +362,7 @@ const SchedulingPageBuilder = () => {
                             <p className="text-sm text-gray-500 mt-1">{category.description}</p>
                           )}
                         </div>
-                        <button className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors">
+                        <button className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors cursor-pointer">
                           SELECT
                         </button>
                       </div>
@@ -372,7 +371,7 @@ const SchedulingPageBuilder = () => {
                 ) : (
                   <div className="text-center py-8">
                     <div className="text-sm text-gray-500 mb-4">No service categories created yet</div>
-                    <button className="text-sm text-blue-600 hover:text-blue-700">
+                    <button className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
                       Create your first category
                     </button>
                   </div>
@@ -381,7 +380,7 @@ const SchedulingPageBuilder = () => {
 
               {/* Show All Appointments Link */}
               <div className="mt-8 text-center">
-                <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors uppercase tracking-wide">
+                <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors uppercase tracking-wide cursor-pointer">
                   SHOW ALL APPOINTMENTS
                 </button>
               </div>
