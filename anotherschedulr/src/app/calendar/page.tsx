@@ -262,12 +262,23 @@ const CalendarPage = () => {
     };
   };
 
-  // Get appointments for a specific day
+  // Get appointments for a specific day, filtered by business hours availability
   const getAppointmentsForDay = (dayIndex: number) => {
     const weekStart = new Date(currentDate);
     weekStart.setDate(currentDate.getDate() - currentDate.getDay());
     const targetDate = new Date(weekStart);
     targetDate.setDate(weekStart.getDate() + dayIndex);
+    
+    // Check if this day is available in business hours
+    if (!isLoadingBusinessHours && Object.keys(businessHours).length > 0) {
+      const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][targetDate.getDay()];
+      const dayHours = businessHours[dayKey];
+      
+      // If day is marked as unavailable (open: false), return no appointments
+      if (!dayHours?.open) {
+        return [];
+      }
+    }
     
     return appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.startTime);
@@ -421,8 +432,23 @@ const CalendarPage = () => {
     return `${formatTime(start)}-${formatTime(end)}`;
   };
 
+  // Check if appointment conflicts with business hours
+  const isAppointmentInBusinessHours = (appointment: Appointment): boolean => {
+    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
+      return true; // Show all appointments while loading business hours
+    }
+    
+    const startTime = new Date(appointment.startTime);
+    return isWithinBusinessHours(startTime, businessHours);
+  };
+
   // Get appointment colors based on status or service
   const getAppointmentColor = (appointment: Appointment) => {
+    // Check if appointment is outside business hours
+    if (!isAppointmentInBusinessHours(appointment)) {
+      return 'bg-yellow-200 border-yellow-400 text-yellow-800'; // Warning color for out-of-hours appointments
+    }
+    
     switch (appointment.status) {
       case 'CONFIRMED':
         return 'bg-green-200 border-green-300 text-green-800';
@@ -656,8 +682,8 @@ const CalendarPage = () => {
         {/* Calendar Grid */}
         <div className="flex-1 bg-white overflow-hidden">
           {viewType === 'week' && (
-            <div className="h-full flex flex-col">
-              <div className="grid grid-cols-8 border-b border-gray-300 bg-gray-800">
+            <div className="h-full flex flex-col overflow-x-hidden">
+              <div className="grid border-b border-gray-300 bg-gray-800" style={{ gridTemplateColumns: '120px repeat(7, 1fr)' }}>
                 {/* Time column with timezone */}
                 <div className="border-r border-gray-600 p-3 flex flex-col items-center justify-center text-white">
                   <div className="text-xs font-medium opacity-75">GMT-04</div>
@@ -688,7 +714,7 @@ const CalendarPage = () => {
               </div>
 
               {/* Time slots and appointment grid with precise positioning */}
-              <div className="flex-1 overflow-y-auto relative" style={{ height: 'calc(100vh - 200px)' }}>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden relative" style={{ height: 'calc(100vh - 200px)' }}>
                 {/* Time grid */}
                 <div 
                   className="relative" 
@@ -701,10 +727,15 @@ const CalendarPage = () => {
                   }}
                 >
                   {timeSlots.map((time, timeIndex) => (
-                    <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100 absolute w-full" 
+                    <div key={timeIndex} className="grid border-b border-gray-100 absolute" 
                          style={{ 
+                           gridTemplateColumns: '120px repeat(7, 1fr)',
                            height: '60px',
-                           top: `${timeIndex * 60}px`
+                           top: `${timeIndex * 60}px`,
+                           width: '100%',
+                           maxWidth: '100%',
+                           left: 0,
+                           right: 0
                          }}>
                       {/* Time label */}
                       <div className="border-r border-gray-200 bg-gray-50 px-3 py-1 text-right flex items-start justify-end">
@@ -754,15 +785,14 @@ const CalendarPage = () => {
                       const baseZIndex = 10;
                       const focusedZIndex = 40;
                       
-                      // Calculate column width and position to keep appointment within its day
-                      const columnWidth = 100 / 8; // 12.5% per column
-                      const dayColumnStart = (dayIndex + 1) * columnWidth;
+                      // Calculate position with fixed time column (120px) + 7 day columns
+                      // Using calc() for precise positioning that accounts for the 120px time column
+                      const dayColumnWidth = `calc((100% - 120px) / 7)`; // Each day column width
                       
                       // Handle overlapping appointments by dividing column width
                       const overlapCount = overlapping.length + 1;
-                      const availableWidth = columnWidth - 1; // Leave 1% padding
-                      const appointmentWidth = availableWidth / overlapCount;
-                      const offsetWithinColumn = overlapIndex * appointmentWidth;
+                      const offsetWithinColumn = overlapIndex * (1 / overlapCount);
+                      const appointmentWidthFraction = 1 / overlapCount;
                       
                       return (
                         <div 
@@ -772,11 +802,8 @@ const CalendarPage = () => {
                           }`}
                           style={{
                             ...style,
-                            left: `${dayColumnStart + offsetWithinColumn + 0.25}%`, // Small padding from left edge
-                            width: `${appointmentWidth - 0.5}%`, // Leave small padding between overlapping appointments
-                            maxWidth: `${columnWidth - 0.5}%`, // Ensure it never exceeds column
-                            marginLeft: '1px',
-                            marginRight: '1px',
+                            left: `calc(120px + ${dayIndex} * ${dayColumnWidth} + ${offsetWithinColumn} * ${dayColumnWidth} + 2px)`,
+                            width: `calc(${appointmentWidthFraction} * ${dayColumnWidth} - 4px)`, // Leave 4px total padding
                             zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
                             overflow: 'hidden',
                             padding: isMobile ? '6px 8px' : '4px 6px',
@@ -798,6 +825,7 @@ const CalendarPage = () => {
                                 }`}
                                 title={`${appointment.client.name}: ${appointment.service?.name || appointment.title}`}
                               >
+                                {!isAppointmentInBusinessHours(appointment) && '⚠️ '}
                                 {appointment.client.name}
                               </div>
                               <div 

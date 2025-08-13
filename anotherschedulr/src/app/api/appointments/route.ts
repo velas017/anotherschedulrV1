@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { appointmentSchema, validateRequestBody, validateQueryParams, dateRangeSchema } from '@/lib/validations';
+import { parseBusinessHours, isWithinBusinessHours, getDayKey } from '@/lib/availability';
 
 // GET /api/appointments - Fetch appointments for the current user
 export async function GET(request: NextRequest) {
@@ -123,6 +124,42 @@ export async function POST(request: NextRequest) {
     // Validate that start time is before end time
     if (startDateTime >= endDateTime) {
       return NextResponse.json({ error: 'End time must be after start time' }, { status: 400 });
+    }
+
+    // Check business hours availability
+    try {
+      // Get user's business hours from scheduling page settings
+      const schedulingPage = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { businessHours: true }
+      });
+
+      const businessHours = parseBusinessHours(schedulingPage?.businessHours || null);
+      const dayKey = getDayKey(startDateTime);
+      const dayHours = businessHours[dayKey];
+
+      // Check if the day is available for appointments
+      if (!dayHours?.open) {
+        return NextResponse.json({ 
+          error: `Appointments cannot be scheduled on ${dayKey}s - this day is marked as unavailable in your business hours` 
+        }, { status: 400 });
+      }
+
+      // Check if the appointment time is within business hours
+      if (!isWithinBusinessHours(startDateTime, businessHours)) {
+        const timeStr = startDateTime.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit', 
+          hour12: true 
+        });
+        return NextResponse.json({ 
+          error: `Appointment at ${timeStr} is outside business hours (${dayHours.start} - ${dayHours.end})` 
+        }, { status: 400 });
+      }
+    } catch (error) {
+      console.error('Error validating business hours:', error);
+      // Continue with appointment creation if business hours validation fails
+      // This ensures existing functionality isn't broken by business hours issues
     }
 
     const conflictingAppointments = await prisma.appointment.findMany({

@@ -292,10 +292,39 @@ async function seedMockData() {
     ]);
     console.log(`✅ Created ${clients.length} mock clients\n`);
 
-    // 4. Create Strategic Appointments
+    // 4. Create Strategic Appointments with Business Hours Validation
     console.log('📅 Creating mock appointments with proper spacing...');
     
-    // Get current week's Thursday and Friday for appointments
+    // Get user's business hours to validate appointment times
+    const schedulingPage = await prisma.schedulingPage.findUnique({
+      where: { userId },
+      select: { businessHours: true }
+    });
+    
+    // Parse business hours (use default if none set)
+    const parseBusinessHours = (businessHoursJson) => {
+      if (!businessHoursJson) {
+        return {
+          sunday: { open: false },
+          monday: { open: true, start: '09:00', end: '17:00' },
+          tuesday: { open: true, start: '09:00', end: '17:00' },
+          wednesday: { open: true, start: '09:00', end: '17:00' },
+          thursday: { open: true, start: '09:00', end: '17:00' },
+          friday: { open: true, start: '09:00', end: '17:00' },
+          saturday: { open: false }
+        };
+      }
+      try {
+        return JSON.parse(businessHoursJson);
+      } catch {
+        return parseBusinessHours(null);
+      }
+    };
+    
+    const businessHours = parseBusinessHours(schedulingPage?.businessHours || null);
+    console.log('✅ Business hours loaded:', businessHours);
+    
+    // Get current week's Thursday and Friday for appointments (only if they're available)
     const today = new Date();
     const dayOfWeek = today.getDay();
     const thursday = new Date(today);
@@ -304,8 +333,33 @@ async function seedMockData() {
     
     const friday = new Date(thursday);
     friday.setDate(thursday.getDate() + 1); // Friday
+    
+    // Validate that Thursday and Friday are available for appointments
+    const thursdayAvailable = businessHours.thursday?.open;
+    const fridayAvailable = businessHours.friday?.open;
+    
+    console.log(`📋 Day availability check:`);
+    console.log(`   Thursday: ${thursdayAvailable ? '✅ Available' : '❌ Unavailable'}`);
+    console.log(`   Friday: ${fridayAvailable ? '✅ Available' : '❌ Unavailable'}`);
+    
+    if (!thursdayAvailable && !fridayAvailable) {
+      console.log('⚠️ Warning: Neither Thursday nor Friday are available for appointments.');
+      console.log('   Skipping appointment creation to respect business hours.');
+      console.log('   To create mock appointments, please update your business hours first.');
+      
+      // Skip appointment creation
+      console.log('\n📊 SEEDING SUMMARY:');
+      console.log('═══════════════════════════════════════');
+      console.log(`   User: ${user.email}`);
+      console.log(`   Service Categories: ${categories.length}`);
+      console.log(`   Services: ${services.length}`);
+      console.log(`   Clients: ${clients.length}`);
+      console.log(`   Appointments: 0 (skipped due to business hours)`);
+      console.log('\n🎉 Safe mock data seeding completed (no appointments created)!');
+      return;
+    }
 
-    // Thursday's appointments - properly spaced
+    // Thursday's appointments - properly spaced (only if Thursday is available)
     const thursdayAppointments = [
       {
         title: 'Initial Consultation - Sarah Johnson',
@@ -393,8 +447,16 @@ async function seedMockData() {
       }
     ];
 
-    // Create all appointments
-    const allAppointments = [...thursdayAppointments, ...fridayAppointments];
+    // Create appointments only for available days
+    const allAppointments = [];
+    if (thursdayAvailable) {
+      allAppointments.push(...thursdayAppointments);
+      console.log(`✅ Added ${thursdayAppointments.length} Thursday appointments`);
+    }
+    if (fridayAvailable) {
+      allAppointments.push(...fridayAppointments);
+      console.log(`✅ Added ${fridayAppointments.length} Friday appointments`);
+    }
     const createdAppointments = await Promise.all(
       allAppointments.map(apt => prisma.appointment.create({ data: apt }))
     );
