@@ -484,9 +484,10 @@ const CalendarPage = () => {
       const aptStart = new Date(apt.startTime);
       const aptEnd = new Date(apt.endTime);
       
+      // Check for actual overlap (not just touching)
+      // Appointments that touch (end = start) should NOT be considered overlapping
       return (
-        (appointmentStart < aptEnd && appointmentEnd > aptStart) ||
-        (aptStart < appointmentEnd && aptEnd > appointmentStart)
+        (appointmentStart < aptEnd && appointmentEnd > aptStart)
       );
     });
   };
@@ -753,6 +754,16 @@ const CalendarPage = () => {
                       const baseZIndex = 10;
                       const focusedZIndex = 40;
                       
+                      // Calculate column width and position to keep appointment within its day
+                      const columnWidth = 100 / 8; // 12.5% per column
+                      const dayColumnStart = (dayIndex + 1) * columnWidth;
+                      
+                      // Handle overlapping appointments by dividing column width
+                      const overlapCount = overlapping.length + 1;
+                      const availableWidth = columnWidth - 1; // Leave 1% padding
+                      const appointmentWidth = availableWidth / overlapCount;
+                      const offsetWithinColumn = overlapIndex * appointmentWidth;
+                      
                       return (
                         <div 
                           key={appointment.id}
@@ -761,18 +772,14 @@ const CalendarPage = () => {
                           }`}
                           style={{
                             ...style,
-                            left: `${(dayIndex + 1) * (100 / 8) + (overlapIndex * (isMobile ? 0.3 : 0.5))}%`,
-                            width: `${Math.max(
-                              (100 / 8) - (overlapping.length > 0 ? (isMobile ? 0.5 : 1) : 0), 
-                              isMobile ? 16 : 15
-                            )}%`,
-                            minWidth: isMobile ? '220px' : '200px',
-                            maxWidth: '25%',
-                            marginLeft: '2px',
-                            marginRight: '2px',
+                            left: `${dayColumnStart + offsetWithinColumn + 0.25}%`, // Small padding from left edge
+                            width: `${appointmentWidth - 0.5}%`, // Leave small padding between overlapping appointments
+                            maxWidth: `${columnWidth - 0.5}%`, // Ensure it never exceeds column
+                            marginLeft: '1px',
+                            marginRight: '1px',
                             zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
                             overflow: 'hidden',
-                            padding: isMobile ? '8px 10px' : '6px 8px',
+                            padding: isMobile ? '6px 8px' : '4px 6px',
                             boxSizing: 'border-box'
                           }}
                           onClick={(e) => {
@@ -782,22 +789,30 @@ const CalendarPage = () => {
                             );
                           }}
                         >
-                          <div className="h-full flex flex-col px-2 py-1">
-                            {/* Text content - can expand with wrapping */}
-                            <div className="flex-1 pb-1">
+                          <div className="h-full flex flex-col">
+                            {/* Text content - truncate with ellipsis for narrow columns */}
+                            <div className="flex-1 min-w-0">
                               <div 
-                                className={`font-semibold leading-tight break-words hyphens-auto ${
+                                className={`font-semibold leading-tight truncate ${
                                   isMobile ? 'text-sm' : 'text-xs'
                                 }`}
                                 title={`${appointment.client.name}: ${appointment.service?.name || appointment.title}`}
                               >
-                                {appointment.client.name}: {appointment.service?.name || appointment.title}
+                                {appointment.client.name}
+                              </div>
+                              <div 
+                                className={`leading-tight truncate text-gray-700 ${
+                                  isMobile ? 'text-xs' : 'text-xs'
+                                }`}
+                                title={appointment.service?.name || appointment.title}
+                              >
+                                {appointment.service?.name || appointment.title}
                               </div>
                             </div>
                             
                             {/* Time - always at bottom */}
                             <div 
-                              className={`leading-tight whitespace-nowrap ${
+                              className={`leading-tight truncate mt-1 ${
                                 isMobile ? 'text-xs' : 'text-xs'
                               }`}
                               title={formatAppointmentTime(appointment.startTime, appointment.endTime)}
