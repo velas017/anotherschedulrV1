@@ -86,6 +86,15 @@ const CalendarPage = () => {
     fetchAppointments();
   }, [currentDate, viewType]);
 
+  // Debug: Log when business hours state changes to verify re-renders
+  useEffect(() => {
+    console.log('[DEBUG] Business hours state changed:', {
+      businessHours,
+      isEmpty: Object.keys(businessHours).length === 0,
+      isLoading: isLoadingBusinessHours
+    });
+  }, [businessHours, isLoadingBusinessHours]);
+
   // Click outside handler for dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,21 +115,30 @@ const CalendarPage = () => {
   // Fetch business hours from the API
   const fetchBusinessHours = async () => {
     try {
+      console.log('[DEBUG] Starting to fetch business hours...');
       setIsLoadingBusinessHours(true);
       const response = await fetch('/api/scheduling-page');
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[DEBUG] Scheduling page data received:', data);
         const hours = parseBusinessHours(data.businessHours);
+        console.log('[DEBUG] Parsed business hours:', hours);
         setBusinessHours(hours);
       } else {
+        console.log('[DEBUG] API failed, using default business hours');
         // Use default business hours if API fails
-        setBusinessHours(parseBusinessHours(null));
+        const defaultHours = parseBusinessHours(null);
+        console.log('[DEBUG] Default business hours:', defaultHours);
+        setBusinessHours(defaultHours);
       }
     } catch (error) {
-      console.error('Error fetching business hours:', error);
-      setBusinessHours(parseBusinessHours(null));
+      console.error('[DEBUG] Error fetching business hours:', error);
+      const defaultHours = parseBusinessHours(null);
+      console.log('[DEBUG] Error fallback business hours:', defaultHours);
+      setBusinessHours(defaultHours);
     } finally {
+      console.log('[DEBUG] Business hours loading complete');
       setIsLoadingBusinessHours(false);
     }
   };
@@ -269,30 +287,89 @@ const CalendarPage = () => {
     const targetDate = new Date(weekStart);
     targetDate.setDate(weekStart.getDate() + dayIndex);
     
-    // Check if this day is available in business hours
-    if (!isLoadingBusinessHours && Object.keys(businessHours).length > 0) {
-      const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][targetDate.getDay()];
-      const dayHours = businessHours[dayKey];
-      
-      // If day is marked as unavailable (open: false), return no appointments
-      if (!dayHours?.open) {
-        return [];
-      }
+    // Always apply business hours filtering - use defaults if not loaded yet
+    const effectiveBusinessHours = Object.keys(businessHours).length > 0 
+      ? businessHours 
+      : parseBusinessHours(null); // Use default business hours if empty
+    
+    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][targetDate.getDay()];
+    const dayHours = effectiveBusinessHours[dayKey];
+    
+    // CRITICAL DEBUG: Log date calculations and comparisons
+    console.log(`[CRITICAL DEBUG] getAppointmentsForDay(${dayIndex}) calculations:`, {
+      dayIndex,
+      currentDate: currentDate.toDateString(),
+      weekStart: weekStart.toDateString(),
+      targetDate: targetDate.toDateString(),
+      targetDateDay: targetDate.getDate(),
+      targetDateMonth: targetDate.getMonth(),
+      targetDateYear: targetDate.getFullYear(),
+      dayKey,
+      isDayOpen: dayHours?.open
+    });
+    
+    // If day is marked as unavailable (open: false), return no appointments
+    if (!dayHours?.open) {
+      console.log(`[DEBUG] ${dayKey} is closed - returning no appointments`);
+      return [];
     }
     
-    return appointments.filter(appointment => {
+    console.log(`[DEBUG] ${dayKey} is open - proceeding with appointment filtering`);
+    
+    const dayAppointments = appointments.filter(appointment => {
       const appointmentDate = new Date(appointment.startTime);
-      return appointmentDate.getDate() === targetDate.getDate() &&
-             appointmentDate.getMonth() === targetDate.getMonth() &&
-             appointmentDate.getFullYear() === targetDate.getFullYear();
+      const matches = appointmentDate.getDate() === targetDate.getDate() &&
+                     appointmentDate.getMonth() === targetDate.getMonth() &&
+                     appointmentDate.getFullYear() === targetDate.getFullYear();
+      
+      // CRITICAL DEBUG: Log each appointment comparison for Saturday specifically
+      if (dayIndex === 6 || appointment.client?.name?.includes('Lisa Williams') || appointment.client?.name?.includes('Emily Rodriguez')) {
+        console.log(`[CRITICAL DEBUG] Appointment date comparison for ${dayKey}:`, {
+          appointmentId: appointment.id,
+          clientName: appointment.client?.name,
+          appointmentStartTime: appointment.startTime,
+          appointmentDate: appointmentDate.toDateString(),
+          appointmentDay: appointmentDate.getDate(),
+          appointmentMonth: appointmentDate.getMonth(),
+          appointmentYear: appointmentDate.getFullYear(),
+          appointmentDayOfWeek: appointmentDate.getDay(),
+          targetDateDay: targetDate.getDate(),
+          targetDateMonth: targetDate.getMonth(), 
+          targetDateYear: targetDate.getFullYear(),
+          targetDayOfWeek: targetDate.getDay(),
+          matches,
+          dayIndex
+        });
+      }
+      
+      return matches;
     });
+    
+    // CRITICAL DEBUG: Log final results for Saturday and problem appointments
+    if (dayIndex === 6) {
+      console.log(`[CRITICAL DEBUG] Saturday final results:`, {
+        dayIndex: 6,
+        targetDate: targetDate.toDateString(),
+        totalAppointmentsChecked: appointments.length,
+        matchingAppointments: dayAppointments.length,
+        appointmentDetails: dayAppointments.map(apt => ({
+          id: apt.id,
+          clientName: apt.client?.name,
+          startTime: apt.startTime,
+          dayOfWeek: new Date(apt.startTime).getDay()
+        }))
+      });
+    }
+    
+    return dayAppointments;
   };
 
   // Check if a time slot should be disabled based on business hours and blocked times
   const isTimeSlotAvailable = (date: Date, timeSlot: string) => {
-    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
-      return { available: true, reason: null }; // Show all slots while loading
-    }
+    // Always apply business hours filtering - use defaults if not loaded yet
+    const effectiveBusinessHours = Object.keys(businessHours).length > 0 
+      ? businessHours 
+      : parseBusinessHours(null); // Use default business hours if empty
 
     // Convert time slot string to hour
     let hour = 0;
@@ -320,7 +397,7 @@ const CalendarPage = () => {
     }
 
     // Check business hours
-    if (!isWithinBusinessHours(slotDate, businessHours)) {
+    if (!isWithinBusinessHours(slotDate, effectiveBusinessHours)) {
       return { available: false, reason: 'outside-hours' };
     }
 
@@ -434,12 +511,32 @@ const CalendarPage = () => {
 
   // Check if appointment conflicts with business hours
   const isAppointmentInBusinessHours = (appointment: Appointment): boolean => {
-    if (isLoadingBusinessHours || Object.keys(businessHours).length === 0) {
-      return true; // Show all appointments while loading business hours
-    }
+    // Always apply business hours validation - use defaults if not loaded yet
+    const effectiveBusinessHours = Object.keys(businessHours).length > 0 
+      ? businessHours 
+      : parseBusinessHours(null); // Use default business hours (Saturday closed)
+    
+    console.log('[DEBUG] Checking appointment business hours:', {
+      appointmentId: appointment.id,
+      startTime: appointment.startTime,
+      dayOfWeek: new Date(appointment.startTime).getDay(),
+      businessHoursLoaded: Object.keys(businessHours).length > 0,
+      isLoadingBusinessHours
+    });
     
     const startTime = new Date(appointment.startTime);
-    return isWithinBusinessHours(startTime, businessHours);
+    const isValid = isWithinBusinessHours(startTime, effectiveBusinessHours);
+    
+    if (!isValid) {
+      console.warn('[BUSINESS HOURS VIOLATION] Appointment outside business hours:', {
+        appointmentId: appointment.id,
+        clientName: appointment.client?.name,
+        startTime: appointment.startTime,
+        dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][startTime.getDay()]
+      });
+    }
+    
+    return isValid;
   };
 
   // Get appointment colors based on status or service
@@ -717,7 +814,7 @@ const CalendarPage = () => {
               <div className="flex-1 overflow-y-auto overflow-x-hidden relative" style={{ height: 'calc(100vh - 200px)' }}>
                 {/* Time grid */}
                 <div 
-                  className="relative" 
+                  className="relative"
                   style={{ height: `${timeSlots.length * 60}px` }}
                   onClick={(e) => {
                     // Clear focused appointment when clicking on calendar background
@@ -748,7 +845,7 @@ const CalendarPage = () => {
                         return (
                           <div 
                             key={dayIndex} 
-                            className={`border-r border-gray-100 relative transition-colors ${
+                            className={`day-column border-r border-gray-100 relative transition-colors ${
                               day.isToday ? 'bg-blue-50/30' : ''
                             } ${!availability.available ? (availability.reason === 'blocked' ? 'bg-red-50/50' : 'bg-gray-100/50') : ''} hover:bg-gray-50/80 cursor-pointer`}
                             onClick={() => handleTimeSlotClick(day, time)}
@@ -770,9 +867,54 @@ const CalendarPage = () => {
                   ))}
                   
                   {/* Render appointments with precise positioning */}
-                  {weekDates.map((day, dayIndex) => {
-                    const dayAppointments = getAppointmentsForDay(dayIndex);
-                    return dayAppointments.map((appointment) => {
+                  {(() => {
+                    // Collect ALL appointments for the week, properly filtered by business hours
+                    const allWeekAppointments: Array<{appointment: Appointment, dayIndex: number}> = [];
+                    
+                    weekDates.forEach((day, dayIndex) => {
+                      const dayAppointments = getAppointmentsForDay(dayIndex);
+                      const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayIndex];
+                      
+                      console.log(`[DEBUG] ${dayName} (dayIndex=${dayIndex}) appointments:`, {
+                        targetDate: day.date.toDateString(),
+                        dayAppointments: dayAppointments.length,
+                        appointmentIds: dayAppointments.map(apt => apt.id)
+                      });
+                      
+                      dayAppointments.forEach(appointment => {
+                        // Verify appointment actually belongs to this day
+                        const appointmentDayOfWeek = new Date(appointment.startTime).getDay();
+                        
+                        if (appointmentDayOfWeek === dayIndex) {
+                          // Final business hours validation
+                          if (isAppointmentInBusinessHours(appointment)) {
+                            allWeekAppointments.push({ appointment, dayIndex });
+                          } else {
+                            console.warn('[BLOCKED] Appointment outside business hours:', {
+                              appointmentId: appointment.id,
+                              clientName: appointment.client?.name,
+                              dayName,
+                              startTime: appointment.startTime
+                            });
+                          }
+                        } else {
+                          console.error('[CRITICAL ERROR] Day mismatch detected and blocked:', {
+                            appointmentId: appointment.id,
+                            clientName: appointment.client?.name,
+                            appointmentDayOfWeek,
+                            expectedDayIndex: dayIndex,
+                            appointmentDay: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][appointmentDayOfWeek],
+                            expectedDay: dayName
+                          });
+                        }
+                      });
+                    });
+                    
+                    console.log('[FINAL RENDER] Total appointments to render:', allWeekAppointments.length);
+                    
+                    // Now render each appointment in its correct column
+                    return allWeekAppointments.map(({ appointment, dayIndex }) => {
+                      const dayAppointments = getAppointmentsForDay(dayIndex);
                       const style = calculateAppointmentStyle(appointment.startTime, appointment.endTime, 60);
                       const colorClass = getAppointmentColor(appointment);
                       
@@ -786,13 +928,43 @@ const CalendarPage = () => {
                       const focusedZIndex = 40;
                       
                       // Calculate position with fixed time column (120px) + 7 day columns
-                      // Using calc() for precise positioning that accounts for the 120px time column
-                      const dayColumnWidth = `calc((100% - 120px) / 7)`; // Each day column width
+                      const dayColumnWidth = `calc((100% - 120px) / 7)`;
                       
-                      // Handle overlapping appointments by dividing column width
-                      const overlapCount = overlapping.length + 1;
-                      const offsetWithinColumn = overlapIndex * (1 / overlapCount);
-                      const appointmentWidthFraction = 1 / overlapCount;
+                      // ⚠️  CRITICAL BUSINESS RULE: Appointments must NEVER be positioned outside their correct day column
+                      // This ensures business hours restrictions are visually enforced in the UI
+                      // 
+                      // 🚨 BUG HISTORY: August 13, 2025 - Overlap calculations shifted appointments to wrong day columns,
+                      //    causing Thursday/Friday appointments to appear on Saturday (closed day).
+                      //    See CRITICAL_BUG_REPORT_2025_08_13.md for full details.
+                      //
+                      // ✅ SAFE PATTERN: Always use appointment's actual day for positioning
+                      const actualDayIndex = new Date(appointment.startTime).getDay();
+                      
+                      // ✅ SAFE: Simple positioning keeps appointments in their correct day column
+                      // ❌ FORBIDDEN: Adding dayColumnWidth as offsets (shifts between day columns)
+                      const dayColumnStart = `calc(120px + ${actualDayIndex} * ${dayColumnWidth})`;
+                      const leftPositionValue = `calc(${dayColumnStart} + 2px)`;
+                      const widthValue = `calc(${dayColumnWidth} - 8px)`;
+                      
+                      // ALERT: If any appointment is positioned in Saturday (index 6), it's a critical error
+                      if (actualDayIndex === 6) {
+                        console.error(`[CRITICAL BUG] APPOINTMENT INCORRECTLY POSITIONED IN SATURDAY COLUMN!`, {
+                          appointmentId: appointment.id,
+                          clientName: appointment.client?.name,
+                          startTime: appointment.startTime,
+                          actualDayIndex,
+                          leftCSS: leftPositionValue,
+                          ALERT: 'THIS SHOULD NEVER HAPPEN - SATURDAY IS CLOSED'
+                        });
+                      }
+                      
+                      console.log(`[POSITION DEBUG] Positioning appointment:`, {
+                        appointmentId: appointment.id,
+                        clientName: appointment.client?.name,
+                        actualDayIndex,
+                        dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][actualDayIndex],
+                        leftCSS: leftPositionValue
+                      });
                       
                       return (
                         <div 
@@ -802,8 +974,8 @@ const CalendarPage = () => {
                           }`}
                           style={{
                             ...style,
-                            left: `calc(120px + ${dayIndex} * ${dayColumnWidth} + ${offsetWithinColumn} * ${dayColumnWidth} + 2px)`,
-                            width: `calc(${appointmentWidthFraction} * ${dayColumnWidth} - 4px)`, // Leave 4px total padding
+                            left: leftPositionValue,
+                            width: widthValue,
                             zIndex: isFocused ? focusedZIndex : baseZIndex + overlapIndex,
                             overflow: 'hidden',
                             padding: isMobile ? '6px 8px' : '4px 6px',
@@ -817,7 +989,6 @@ const CalendarPage = () => {
                           }}
                         >
                           <div className="h-full flex flex-col">
-                            {/* Text content - truncate with ellipsis for narrow columns */}
                             <div className="flex-1 min-w-0">
                               <div 
                                 className={`font-semibold leading-tight truncate ${
@@ -825,7 +996,6 @@ const CalendarPage = () => {
                                 }`}
                                 title={`${appointment.client.name}: ${appointment.service?.name || appointment.title}`}
                               >
-                                {!isAppointmentInBusinessHours(appointment) && '⚠️ '}
                                 {appointment.client.name}
                               </div>
                               <div 
@@ -838,7 +1008,6 @@ const CalendarPage = () => {
                               </div>
                             </div>
                             
-                            {/* Time - always at bottom */}
                             <div 
                               className={`leading-tight truncate mt-1 ${
                                 isMobile ? 'text-xs' : 'text-xs'
@@ -851,7 +1020,7 @@ const CalendarPage = () => {
                         </div>
                       );
                     });
-                  })}
+                  })()}
                 </div>
               </div>
             </div>
@@ -897,31 +1066,70 @@ const CalendarPage = () => {
                       )}
                       
                       {/* Render appointments for the current day */}
-                      {appointments.map((appointment) => {
-                        const appointmentDate = new Date(currentDate);
-                        appointmentDate.setDate(currentDate.getDate() - currentDate.getDay() + appointment.dayIndex);
-                        const isSameDay = appointmentDate.getDate() === currentDate.getDate() && 
-                                        appointmentDate.getMonth() === currentDate.getMonth() &&
-                                        appointmentDate.getFullYear() === currentDate.getFullYear();
-                        
-                        return isSameDay && appointment.time.includes(time.replace('am', 'AM').replace('pm', 'PM')) && (
-                          <div 
-                            key={appointment.id}
-                            className={`${appointment.color} p-3 rounded-lg text-sm relative z-10 border w-full`}
-                            style={{ minHeight: '100px' }}
-                          >
-                            <div className="font-medium text-gray-900 mb-1">
-                              {appointment.client}: {appointment.service}
+                      {appointments
+                        .filter(appointment => {
+                          // Filter appointments for current day and validate business hours
+                          const appointmentDate = new Date(appointment.startTime);
+                          const isSameDay = appointmentDate.getDate() === currentDate.getDate() && 
+                                          appointmentDate.getMonth() === currentDate.getMonth() &&
+                                          appointmentDate.getFullYear() === currentDate.getFullYear();
+                          
+                          // Check if appointment is within business hours
+                          const isValidBusinessHours = isAppointmentInBusinessHours(appointment);
+                          
+                          if (isSameDay && !isValidBusinessHours) {
+                            console.warn('[DAY VIEW] Blocking appointment outside business hours:', {
+                              appointmentId: appointment.id,
+                              clientName: appointment.client?.name,
+                              startTime: appointment.startTime
+                            });
+                          }
+                          
+                          return isSameDay && isValidBusinessHours;
+                        })
+                        .filter(appointment => {
+                          // Filter by time slot
+                          const appointmentStart = new Date(appointment.startTime);
+                          const appointmentHour = appointmentStart.getHours();
+                          const appointmentMinute = appointmentStart.getMinutes();
+                          
+                          // Convert time slot to hour for comparison
+                          const timeMatch = time.match(/^(\d{1,2})\s*(AM|PM)$/i);
+                          if (!timeMatch) return false;
+                          
+                          let timeHour = parseInt(timeMatch[1]);
+                          const isPM = timeMatch[2].toLowerCase() === 'pm';
+                          
+                          if (isPM && timeHour !== 12) {
+                            timeHour += 12;
+                          } else if (!isPM && timeHour === 12) {
+                            timeHour = 0;
+                          }
+                          
+                          // Check if appointment starts within this hour
+                          return appointmentHour === timeHour;
+                        })
+                        .map(appointment => {
+                          const colorClass = getAppointmentColor(appointment);
+                          return (
+                            <div 
+                              key={appointment.id}
+                              className={`${colorClass} p-3 rounded-lg text-sm relative z-10 border w-full`}
+                              style={{ minHeight: '100px' }}
+                            >
+                              <div className="font-medium text-gray-900 mb-1">
+                                {!isAppointmentInBusinessHours(appointment) && '⚠️ '}
+                                {appointment.client?.name}: {appointment.service?.name || appointment.title}
+                              </div>
+                              <div className="text-gray-700 mb-1">
+                                {appointment.description || ''}
+                              </div>
+                              <div className="text-gray-600">
+                                {formatAppointmentTime(appointment.startTime, appointment.endTime)}
+                              </div>
                             </div>
-                            <div className="text-gray-700 mb-1">
-                              {appointment.treatment}
-                            </div>
-                            <div className="text-gray-600">
-                              {appointment.time}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                     </div>
                   </div>
                 ))}
@@ -962,10 +1170,11 @@ const CalendarPage = () => {
                             {/* Count appointments for this day */}
                             {(() => {
                               const dayAppointments = appointments.filter(appointment => {
-                                const appointmentDate = new Date(currentDate);
-                                appointmentDate.setDate(currentDate.getDate() - currentDate.getDay() + appointment.dayIndex);
+                                const appointmentDate = new Date(appointment.startTime);
+                                const isValidBusinessHours = isAppointmentInBusinessHours(appointment);
                                 return appointmentDate.getDate() === dateInfo.day &&
-                                       appointmentDate.getMonth() === currentDate.getMonth();
+                                       appointmentDate.getMonth() === currentDate.getMonth() &&
+                                       isValidBusinessHours;
                               });
                               
                               return dayAppointments.length > 0 && (

@@ -80,6 +80,59 @@ Main entities: User, Client, Service, Appointment (see `prisma/schema.prisma`)
 
 ## Development Guidelines
 
+### Critical Bug-Fixing Philosophy
+
+**MANDATORY**: Bugs must NEVER be hidden or masked with CSS solutions. All issues must be resolved at their root cause.
+
+- **CSS Hiding Forbidden**: Never use `display: none`, `visibility: hidden`, or positioning tricks to hide buggy behavior
+- **Root Cause Analysis Required**: Always investigate and fix the underlying logic, data flow, or architectural issue
+- **No Band-Aid Solutions**: Temporary CSS fixes create technical debt and mask serious problems
+- **Business Logic Integrity**: Particularly critical for appointment scheduling, business hours, and data isolation
+- **Examples of Prohibited Approaches**:
+  - Hiding appointments that appear on wrong days with CSS
+  - Using CSS to mask data filtering failures
+  - Positioning adjustments to hide incorrect date calculations
+  - Visual overrides to hide business logic violations
+
+This principle ensures system reliability, maintainability, and prevents serious business logic violations from being overlooked.
+
+### Calendar Appointment Positioning - CRITICAL GUIDELINES
+
+**MANDATORY**: Appointments must NEVER be positioned outside their correct day column. This is a core business rule violation.
+
+#### ✅ Correct Appointment Positioning Pattern
+```typescript
+// ALWAYS use appointment's actual day for column calculation
+const actualDayIndex = new Date(appointment.startTime).getDay();
+const dayColumnStart = `calc(120px + ${actualDayIndex} * ${dayColumnWidth})`;
+const leftPosition = `calc(${dayColumnStart} + smallInternalOffset)`;
+```
+
+#### ❌ FORBIDDEN Positioning Patterns
+```typescript
+// NEVER add full column widths as offsets - this shifts appointments between days
+const leftPosition = `calc(dayColumn + ${overlapIndex} * ${dayColumnWidth})`;
+
+// NEVER use loop variables for day positioning - causes closure issues
+const leftPosition = `calc(120px + ${dayIndex} * ${dayColumnWidth})`;
+
+// NEVER allow positioning calculations that can exceed column boundaries
+const offset = overlapIndex * fullColumnWidth; // This can shift to wrong days
+```
+
+#### Calendar Positioning Code Review Checklist
+Before approving ANY calendar positioning changes:
+- [ ] Verify `new Date(appointment.startTime).getDay()` is used for day column
+- [ ] Ensure no `dayColumnWidth` values are added as offsets
+- [ ] Confirm appointments cannot shift between day columns
+- [ ] Test that Saturday (closed day) shows no appointments
+- [ ] Validate business hours filtering is visually enforced
+
+#### Why This Matters
+**August 13, 2025 Critical Bug**: Overlap positioning calculations shifted Thursday/Friday appointments into Saturday's column, violating business hours. Appointments appeared on closed days despite correct business logic filtering. See `CRITICAL_BUG_REPORT_2025_08_13.md` for full details.
+
+**Impact**: Business rule violations, user confusion, potential scheduling conflicts.
+
 ### Database Integration
 
 **CRITICAL**: Always use the correct Prisma import pattern to avoid runtime errors.
