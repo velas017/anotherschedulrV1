@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -39,7 +40,8 @@ const PublicBookingPage = () => {
   const userId = params.userId as string;
   
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [currentView, setCurrentView] = useState<'categories' | 'services'>('categories');
+  const [selectedCategoryData, setSelectedCategoryData] = useState<ServiceCategory | null>(null);
   const [config, setConfig] = useState<SchedulingPageConfig>({
     primaryColor: '#000000',
     secondaryColor: '#6b7280',
@@ -62,6 +64,9 @@ const PublicBookingPage = () => {
         }
         
         const data = await response.json();
+        
+        // API Response received successfully
+        
         setCategories(data.categories || []);
         setConfig(data.config || config);
       } catch (error) {
@@ -83,10 +88,48 @@ const PublicBookingPage = () => {
     );
   };
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    // In a real implementation, this would navigate to the service selection
-    console.log('Selected category:', categoryId);
+  // Service formatting utilities
+  const formatServiceDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0 && mins > 0) {
+      return `${hours} hour ${mins} minutes`;
+    } else if (hours > 0) {
+      return `${hours} hour`;
+    } else {
+      return `${mins} minutes`;
+    }
+  };
+
+  const formatServicePrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const formatServiceSummary = (duration: number, price: number) => {
+    return `${formatServiceDuration(duration)} @ ${formatServicePrice(price)}`;
+  };
+
+  // Navigation handlers
+  const handleCategorySelect = useCallback((category: ServiceCategory) => {
+    if (!category || !category.services || category.services.length === 0) {
+      console.warn('Category has no services:', category);
+      return;
+    }
+    
+    // Set both state values in a single update to prevent race conditions
+    setSelectedCategoryData(category);
+    setCurrentView('services');
+  }, []);
+
+  const handleBackToCategories = () => {
+    setSelectedCategoryData(null);
+    setCurrentView('categories');
+  };
+
+  const handleServiceSelect = (service: Service) => {
+    // Future: Navigate to appointment booking
+    console.log('Selected service:', service);
   };
 
   const handleShowAllAppointments = () => {
@@ -116,6 +159,8 @@ const PublicBookingPage = () => {
   }
 
   const visibleCategories = getVisibleCategories();
+
+  // Current view state management
 
   return (
     <div 
@@ -156,65 +201,138 @@ const PublicBookingPage = () => {
           )}
 
           <div className="p-6">
-            {/* Category Selection Header */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-lg">📋</span>
-                <h2 className="text-lg font-semibold text-gray-900">Select Category</h2>
-              </div>
-            </div>
-
-            {/* Categories List */}
-            <div className="space-y-4 mb-8">
-              {visibleCategories.length > 0 ? (
-                visibleCategories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 mb-1">
-                          {category.name}
-                        </h3>
-                        {category.description && (
-                          <p className="text-gray-600 text-sm mb-2">
-                            {category.description}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500">
-                          {category.services.filter(s => s.isVisible).length} services available
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCategorySelect(category.id)}
-                        className="px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: config.primaryColor }}
-                      >
-                        SELECT
-                      </button>
-                    </div>
+            {currentView === 'categories' ? (
+              <>
+                {/* Category Selection Header */}
+                <div className="mb-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <span className="text-lg">📋</span>
+                    <h2 className="text-lg font-semibold text-gray-900">Select Category</h2>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">No services are currently available for booking.</p>
-                  <p className="text-sm text-gray-400">Please check back later.</p>
                 </div>
-              )}
-            </div>
 
-            {/* Show All Appointments Link */}
-            {config.allowOnlineBooking && (
-              <div className="text-center border-t border-gray-200 pt-6">
-                <button
-                  onClick={handleShowAllAppointments}
-                  className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity"
-                  style={{ color: config.secondaryColor }}
-                >
-                  SHOW ALL APPOINTMENTS
-                </button>
-              </div>
+                {/* Categories List */}
+                <div className="space-y-4 mb-8">
+                  {visibleCategories.length > 0 ? (
+                    visibleCategories.map((category) => (
+                      <div 
+                        key={category.id} 
+                        className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-medium text-gray-900 mb-1">
+                              {category.name}
+                            </h3>
+                            {category.description && (
+                              <p className="text-gray-600 text-sm mb-2">
+                                {category.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              {category.services.filter(s => s.isVisible).length} services available
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleCategorySelect(category)}
+                            className="px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                            style={{ backgroundColor: config.primaryColor }}
+                          >
+                            SELECT
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500 mb-4">No services are currently available for booking.</p>
+                      <p className="text-sm text-gray-400">Please check back later.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Show All Appointments Link */}
+                {config.allowOnlineBooking && (
+                  <div className="text-center border-t border-gray-200 pt-6">
+                    <button
+                      onClick={handleShowAllAppointments}
+                      className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity cursor-pointer"
+                      style={{ color: config.secondaryColor }}
+                    >
+                      SHOW ALL APPOINTMENTS
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Services View */}
+                {selectedCategoryData && (
+                  <>
+                    {/* Back Navigation Header */}
+                    <div className="mb-6">
+                      <button
+                        onClick={handleBackToCategories}
+                        className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-5 h-5 mr-1" />
+                        <span className="text-sm font-medium">SELECT CATEGORY</span>
+                      </button>
+                      
+                      <div className="text-center mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900">Select Appointment</h2>
+                      </div>
+                    </div>
+
+                    {/* Category Name */}
+                    <div className="mb-6">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {selectedCategoryData.name}
+                      </h3>
+                    </div>
+
+                    {/* Services List */}
+                    <div className="space-y-4">
+                      {selectedCategoryData.services?.filter(service => service.isVisible)?.length > 0 ? (
+                        selectedCategoryData.services
+                          .filter(service => service.isVisible)
+                          .map((service) => (
+                            <div 
+                              key={service.id}
+                              className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                    {service.name}
+                                  </h4>
+                                  <p className="text-gray-600 mb-2">
+                                    {formatServiceSummary(service.duration, service.price)}
+                                  </p>
+                                  {service.description && (
+                                    <p className="text-gray-600 text-sm">
+                                      {service.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleServiceSelect(service)}
+                                  className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors ml-4 cursor-pointer"
+                                >
+                                  SELECT
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No services available in this category.</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </div>
 

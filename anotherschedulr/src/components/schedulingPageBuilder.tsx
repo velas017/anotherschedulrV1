@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft, 
@@ -45,6 +45,10 @@ const SchedulingPageBuilder = () => {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('Inter');
+  
+  // New state for category/services view management
+  const [currentView, setCurrentView] = useState<'categories' | 'services'>('categories');
+  const [selectedCategoryData, setSelectedCategoryData] = useState<ServiceCategory | null>(null);
 
   // Load saved font family from localStorage
   useEffect(() => {
@@ -125,6 +129,49 @@ const SchedulingPageBuilder = () => {
     setSelectedFontFamily(font);
     // Save to localStorage for persistence
     localStorage.setItem('schedulingPageFontFamily', font);
+  };
+
+  // Category selection handlers (matching public booking page functionality)
+  const handleCategorySelect = useCallback((category: ServiceCategory) => {
+    if (!category || !category.services || category.services.length === 0) {
+      console.warn('Category has no services:', category);
+      return;
+    }
+    
+    setSelectedCategoryData(category);
+    setCurrentView('services');
+  }, []);
+
+  const handleBackToCategories = useCallback(() => {
+    setSelectedCategoryData(null);
+    setCurrentView('categories');
+  }, []);
+
+  const handleServiceSelect = useCallback((service: Service) => {
+    // Future: Navigate to appointment booking
+    console.log('Selected service:', service);
+  }, []);
+
+  // Service formatting utilities (matching public booking page)
+  const formatServiceDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0 && mins > 0) {
+      return `${hours} hour ${mins} minutes`;
+    } else if (hours > 0) {
+      return `${hours} hour`;
+    } else {
+      return `${mins} minutes`;
+    }
+  };
+
+  const formatServicePrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const formatServiceSummary = (duration: number, price: number) => {
+    return `${formatServiceDuration(duration)} @ ${formatServicePrice(price)}`;
   };
 
   return (
@@ -335,62 +382,145 @@ const SchedulingPageBuilder = () => {
             style={{ fontFamily: selectedFontFamily }}
           >
 
-            {/* Category Selector */}
+            {/* Main Content - Categories or Services View */}
             <div className="p-6">
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">📋</span>
-                    <span className="text-sm font-medium">Select Category</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Services List */}
-              <div className="space-y-4">
-                {isLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-sm text-gray-500">Loading services...</div>
-                  </div>
-                ) : categories.length > 0 ? (
-                  categories.map((category) => (
-                    <div key={category.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{category.name}</h3>
-                          {category.description && (
-                            <p className="text-sm text-gray-500 mt-1">{category.description}</p>
-                          )}
-                        </div>
-                        <button className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors cursor-pointer">
-                          SELECT
-                        </button>
-                      </div>
+              {currentView === 'categories' ? (
+                <>
+                  {/* Category Selection Header */}
+                  <div className="mb-6">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <span className="text-lg">📋</span>
+                      <h2 className="text-lg font-semibold text-gray-900">Select Category</h2>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-sm text-gray-500 mb-4">No service categories created yet</div>
-                    <button className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer">
-                      Create your first category
+                  </div>
+
+                  {/* Categories List */}
+                  <div className="space-y-4 mb-8">
+                    {isLoading ? (
+                      <div className="text-center py-8">
+                        <div className="text-sm text-gray-500">Loading services...</div>
+                      </div>
+                    ) : categories.length > 0 ? (
+                      categories.map((category) => {
+                        const categoryWithServices = getCategoriesWithServices().find(cat => cat.id === category.id);
+                        return (
+                          <div key={category.id} className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-medium text-gray-900 mb-1">
+                                  {category.name}
+                                </h3>
+                                {category.description && (
+                                  <p className="text-gray-600 text-sm mb-2">
+                                    {category.description}
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-500">
+                                  {categoryWithServices?.services?.filter(s => s.isVisible)?.length || 0} services available
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleCategorySelect(categoryWithServices || category)}
+                                className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors cursor-pointer"
+                              >
+                                SELECT
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-gray-500 mb-4">No services are currently available for booking.</p>
+                        <p className="text-sm text-gray-400">Please check back later.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Show All Appointments Link */}
+                  <div className="text-center border-t border-gray-200 pt-6">
+                    <button className="text-sm font-medium tracking-wide text-gray-600 hover:text-gray-900 transition-colors cursor-pointer">
+                      SHOW ALL APPOINTMENTS
                     </button>
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  {/* Services View */}
+                  {selectedCategoryData && (
+                    <>
+                      {/* Back Navigation Header */}
+                      <div className="mb-6">
+                        <button
+                          onClick={handleBackToCategories}
+                          className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-5 h-5 mr-1" />
+                          <span className="text-sm font-medium">SELECT CATEGORY</span>
+                        </button>
+                        
+                        <div className="text-center mb-6">
+                          <h2 className="text-lg font-semibold text-gray-900">Select Appointment</h2>
+                        </div>
+                      </div>
 
-              {/* Show All Appointments Link */}
-              <div className="mt-8 text-center">
-                <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors uppercase tracking-wide cursor-pointer">
-                  SHOW ALL APPOINTMENTS
-                </button>
-              </div>
+                      {/* Category Name */}
+                      <div className="mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {selectedCategoryData.name}
+                        </h3>
+                      </div>
+
+                      {/* Services List */}
+                      <div className="space-y-4">
+                        {selectedCategoryData.services?.filter(service => service.isVisible)?.length > 0 ? (
+                          selectedCategoryData.services
+                            .filter(service => service.isVisible)
+                            .map((service) => (
+                              <div 
+                                key={service.id}
+                                className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                      {service.name}
+                                    </h4>
+                                    <p className="text-gray-600 mb-2">
+                                      {formatServiceSummary(service.duration, service.price)}
+                                    </p>
+                                    {service.description && (
+                                      <p className="text-gray-600 text-sm">
+                                        {service.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => handleServiceSelect(service)}
+                                    className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors ml-4 cursor-pointer"
+                                  >
+                                    SELECT
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-gray-500">No services available in this category.</p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
 
               {/* Footer */}
-              <div className="mt-12 text-center border-t border-gray-200 pt-6">
-                <div className="text-xs text-gray-500">
+              <div className="border-t border-gray-200 p-6 text-center mt-8">
+                <div className="text-xs text-gray-500 mb-1">
                   Powered by
                 </div>
-                <div className="text-sm font-medium text-gray-900 mt-1">
+                <div className="text-sm font-medium text-gray-900">
                   another schedulr
                 </div>
               </div>

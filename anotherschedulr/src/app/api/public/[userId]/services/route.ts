@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -86,6 +86,8 @@ export async function GET(
         updatedAt: new Date()
       });
     }
+
+    // API processing complete
 
     // Get scheduling page configuration
     const config = user.schedulingPage || {
