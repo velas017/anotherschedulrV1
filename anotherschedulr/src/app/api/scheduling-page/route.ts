@@ -19,6 +19,17 @@ export async function GET(request: NextRequest) {
 
     // Create default scheduling page if it doesn't exist
     if (!schedulingPage) {
+      // Default business hours (Mon-Fri 9AM-5PM)
+      const defaultBusinessHours = JSON.stringify({
+        sunday: { open: false },
+        monday: { open: true, start: '09:00', end: '17:00' },
+        tuesday: { open: true, start: '09:00', end: '17:00' },
+        wednesday: { open: true, start: '09:00', end: '17:00' },
+        thursday: { open: true, start: '09:00', end: '17:00' },
+        friday: { open: true, start: '09:00', end: '17:00' },
+        saturday: { open: false }
+      });
+
       schedulingPage = await prisma.schedulingPage.create({
         data: {
           userId: session.user.id,
@@ -27,7 +38,9 @@ export async function GET(request: NextRequest) {
           secondaryColor: '#6b7280',
           fontFamily: 'Inter',
           allowOnlineBooking: true,
-          requireApproval: false
+          requireApproval: false,
+          businessHours: defaultBusinessHours,
+          timezone: 'America/New_York'
         }
       });
     }
@@ -89,8 +102,16 @@ export async function PUT(request: NextRequest) {
         secondaryColor: secondaryColor || '#6b7280',
         fontFamily: fontFamily || 'Inter',
         customCSS,
-        businessHours,
-        timezone: timezone || 'UTC',
+        businessHours: businessHours || JSON.stringify({
+          sunday: { open: false },
+          monday: { open: true, start: '09:00', end: '17:00' },
+          tuesday: { open: true, start: '09:00', end: '17:00' },
+          wednesday: { open: true, start: '09:00', end: '17:00' },
+          thursday: { open: true, start: '09:00', end: '17:00' },
+          friday: { open: true, start: '09:00', end: '17:00' },
+          saturday: { open: false }
+        }),
+        timezone: timezone || 'America/New_York',
         allowOnlineBooking: allowOnlineBooking !== undefined ? allowOnlineBooking : true,
         requireApproval: requireApproval !== undefined ? requireApproval : false
       }

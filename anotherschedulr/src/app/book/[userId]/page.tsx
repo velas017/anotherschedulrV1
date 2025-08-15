@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import Calendar from '@/components/Calendar';
 
 interface Service {
   id: string;
@@ -40,8 +41,10 @@ const PublicBookingPage = () => {
   const userId = params.userId as string;
   
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
-  const [currentView, setCurrentView] = useState<'categories' | 'services'>('categories');
+  const [currentView, setCurrentView] = useState<'categories' | 'services' | 'calendar'>('categories');
   const [selectedCategoryData, setSelectedCategoryData] = useState<ServiceCategory | null>(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedDateTime, setSelectedDateTime] = useState<{date: Date | null, time: string | null}>({date: null, time: null});
   const [config, setConfig] = useState<SchedulingPageConfig>({
     primaryColor: '#000000',
     secondaryColor: '#6b7280',
@@ -127,10 +130,22 @@ const PublicBookingPage = () => {
     setCurrentView('categories');
   };
 
-  const handleServiceSelect = (service: Service) => {
-    // Future: Navigate to appointment booking
-    console.log('Selected service:', service);
-  };
+  const handleServiceSelect = useCallback((service: Service) => {
+    setSelectedService(service);
+    setCurrentView('calendar');
+  }, []);
+
+  const handleBackToServices = useCallback(() => {
+    setSelectedService(null);
+    setSelectedDateTime({date: null, time: null});
+    setCurrentView('services');
+  }, []);
+
+  const handleDateTimeSelect = useCallback((date: Date, time: string) => {
+    setSelectedDateTime({date, time});
+    // Future: Navigate to booking confirmation
+    console.log('Selected date/time:', date, time);
+  }, []);
 
   const handleShowAllAppointments = () => {
     // In a real implementation, this would show all available time slots
@@ -201,7 +216,7 @@ const PublicBookingPage = () => {
           )}
 
           <div className="p-6">
-            {currentView === 'categories' ? (
+            {currentView === 'categories' && (
               <>
                 {/* Category Selection Header */}
                 <div className="mb-6">
@@ -264,74 +279,131 @@ const PublicBookingPage = () => {
                   </div>
                 )}
               </>
-            ) : (
+            )}
+
+            {currentView === 'services' && selectedCategoryData && (
               <>
                 {/* Services View */}
-                {selectedCategoryData && (
-                  <>
-                    {/* Back Navigation Header */}
-                    <div className="mb-6">
-                      <button
-                        onClick={handleBackToCategories}
-                        className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
-                      >
-                        <ChevronLeft className="w-5 h-5 mr-1" />
-                        <span className="text-sm font-medium">SELECT CATEGORY</span>
-                      </button>
-                      
-                      <div className="text-center mb-6">
-                        <h2 className="text-lg font-semibold text-gray-900">Select Appointment</h2>
-                      </div>
-                    </div>
+                {/* Back Navigation Header */}
+                <div className="mb-6">
+                  <button
+                    onClick={handleBackToCategories}
+                    className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5 mr-1" />
+                    <span className="text-sm font-medium">SELECT CATEGORY</span>
+                  </button>
+                  
+                  <div className="text-center mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Select Appointment</h2>
+                  </div>
+                </div>
 
-                    {/* Category Name */}
-                    <div className="mb-6">
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {selectedCategoryData.name}
-                      </h3>
-                    </div>
+                {/* Category Name */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {selectedCategoryData.name}
+                  </h3>
+                </div>
 
-                    {/* Services List */}
-                    <div className="space-y-4">
-                      {selectedCategoryData.services?.filter(service => service.isVisible)?.length > 0 ? (
-                        selectedCategoryData.services
-                          .filter(service => service.isVisible)
-                          .map((service) => (
-                            <div 
-                              key={service.id}
-                              className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-semibold text-gray-900 mb-1">
-                                    {service.name}
-                                  </h4>
-                                  <p className="text-gray-600 mb-2">
-                                    {formatServiceSummary(service.duration, service.price)}
-                                  </p>
-                                  {service.description && (
-                                    <p className="text-gray-600 text-sm">
-                                      {service.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <button
-                                  onClick={() => handleServiceSelect(service)}
-                                  className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors ml-4 cursor-pointer"
-                                >
-                                  SELECT
-                                </button>
-                              </div>
+                {/* Services List */}
+                <div className="space-y-4">
+                  {selectedCategoryData.services?.filter(service => service.isVisible)?.length > 0 ? (
+                    selectedCategoryData.services
+                      .filter(service => service.isVisible)
+                      .map((service) => (
+                        <div 
+                          key={service.id}
+                          className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                {service.name}
+                              </h4>
+                              <p className="text-gray-600 mb-2">
+                                {formatServiceSummary(service.duration, service.price)}
+                              </p>
+                              {service.description && (
+                                <p className="text-gray-600 text-sm">
+                                  {service.description}
+                                </p>
+                              )}
                             </div>
-                          ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">No services available in this category.</p>
+                            <button
+                              onClick={() => handleServiceSelect(service)}
+                              className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors ml-4 cursor-pointer"
+                            >
+                              SELECT
+                            </button>
+                          </div>
                         </div>
+                      ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No services available in this category.</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {currentView === 'calendar' && selectedService && (
+              <>
+                {/* Calendar View */}
+                {/* Service Summary Section */}
+                <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {selectedService.name}
+                      </h3>
+                      <p className="text-gray-600">
+                        {formatServiceSummary(selectedService.duration, selectedService.price)}
+                      </p>
+                      {selectedService.description && (
+                        <p className="text-gray-600 text-sm mt-2">
+                          {selectedService.description}
+                        </p>
                       )}
                     </div>
-                  </>
-                )}
+                    <button
+                      onClick={handleBackToServices}
+                      className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {/* Calendar & Time Selection Section */}
+                <div className="space-y-6">
+                  {/* Back Navigation */}
+                  <div className="mb-6">
+                    <button
+                      onClick={handleBackToServices}
+                      className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5 mr-1" />
+                      <span className="text-sm font-medium">SELECT SERVICE</span>
+                    </button>
+                  </div>
+
+                  {/* Calendar Component */}
+                  <div className="border border-gray-200 rounded-lg p-6">
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Select Date & Time</h4>
+                      <p className="text-sm text-gray-500">Choose your preferred appointment date and time</p>
+                    </div>
+                    
+                    <Calendar
+                      userId={userId}
+                      serviceDuration={selectedService.duration}
+                      onDateTimeSelect={handleDateTimeSelect}
+                      selectedDateTime={selectedDateTime}
+                    />
+                  </div>
+                </div>
               </>
             )}
           </div>
