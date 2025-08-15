@@ -139,6 +139,14 @@ const Calendar: React.FC<CalendarProps> = ({
     fetchBusinessHours();
   }, [fetchBusinessHours]);
 
+  // Check if a date falls on a closed business day
+  const isClosedDate = useCallback((day: number) => {
+    const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[checkDate.getDay()];
+    return !businessHours[dayName]?.open;
+  }, [currentDate, businessHours]);
+
   // Handle date selection
   const handleDateClick = useCallback((day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -184,14 +192,6 @@ const Calendar: React.FC<CalendarProps> = ({
     const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     return checkDate < today;
   };
-
-  // Check if a date falls on a closed business day
-  const isClosedDate = useCallback((day: number) => {
-    const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayName = dayNames[checkDate.getDay()];
-    return !businessHours[dayName]?.open;
-  }, [currentDate, businessHours]);
 
   // Check if a date is selected
   const isSelectedDate = (day: number) => {
