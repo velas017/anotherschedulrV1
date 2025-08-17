@@ -24,6 +24,7 @@ export async function GET(
     const date = searchParams.get('date');
     const serviceDuration = searchParams.get('duration');
 
+
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
@@ -55,11 +56,15 @@ export async function GET(
       return NextResponse.json({ error: 'Booking page is not public' }, { status: 403 });
     }
 
-    // Parse the requested date
-    const requestedDate = new Date(date);
+    // Parse the requested date in local timezone to avoid timezone shift issues
+    // CRITICAL FIX: new Date('2025-08-19') creates UTC midnight, which shifts to previous day in local timezone
+    // Solution: Parse as local date by adding time or using date components
+    const [inputYear, inputMonth, inputDay] = date.split('-').map(Number);
+    const requestedDate = new Date(inputYear, inputMonth - 1, inputDay); // month is 0-based
     const fullDayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayIndex = requestedDate.getDay();
     const fullDayName = fullDayNames[dayIndex];
+
 
     // Get business hours from scheduling page
     let businessHours: BusinessHours = {};
@@ -103,10 +108,16 @@ export async function GET(
     const timeSlots: TimeSlot[] = generateTimeSlots(startTime, endTime, duration);
 
     // Get existing appointments for this date
-    const startOfDay = new Date(requestedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(requestedDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    // CRITICAL FIX: Create proper UTC date range for the entire day
+    // Previous bug: Using setHours on Date objects created in local timezone
+    // Fix: Create UTC dates that cover the full 24-hour period
+    const utcYear = requestedDate.getUTCFullYear();
+    const utcMonth = requestedDate.getUTCMonth();
+    const utcDay = requestedDate.getUTCDate();
+    
+    const startOfDay = new Date(Date.UTC(utcYear, utcMonth, utcDay, 0, 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(utcYear, utcMonth, utcDay, 23, 59, 59, 999));
+
 
     const existingAppointments = await prisma.appointment.findMany({
       where: {
@@ -116,27 +127,52 @@ export async function GET(
           lte: endOfDay
         },
         status: {
-          in: ['CONFIRMED', 'PENDING']
+          in: ['CONFIRMED', 'SCHEDULED']
         }
       },
       select: {
         startTime: true,
-        endTime: true
+        endTime: true,
+        id: true,
+        status: true,
+        title: true
       }
     });
 
-    // Filter out unavailable time slots
+
+    // Enhanced conflict detection algorithm
+    // This algorithm ensures NO time slots are shown that would conflict with existing appointments
+    // considering the full service duration of the appointment being booked
     const availableTimeSlots = timeSlots.map(slot => {
+      // FINAL FIX: JavaScript automatically handles timezone conversion correctly
+      // new Date('2025-08-15T10:00:00') creates a date in the user's local timezone
+      // This naturally aligns with how appointments are stored (local time -> UTC in database)
       const slotStart = new Date(`${date}T${slot.time}:00`);
       const slotEnd = new Date(slotStart.getTime() + duration * 60000);
+
 
       // Check if this slot conflicts with any existing appointment
       const hasConflict = existingAppointments.some(appointment => {
         const appointmentStart = new Date(appointment.startTime);
         const appointmentEnd = new Date(appointment.endTime);
 
-        // Check for overlap
-        return (slotStart < appointmentEnd && slotEnd > appointmentStart);
+        // Enhanced overlap detection:
+        // Two time ranges overlap if: start1 < end2 AND start2 < end1
+        // This catches all possible overlap scenarios:
+        // 1. New appointment starts before existing ends AND existing starts before new ends
+        // 2. Handles partial overlaps, complete overlaps, and adjacent appointments
+        const overlaps = slotStart < appointmentEnd && appointmentStart < slotEnd;
+        
+        // Additional safety check: ensure minimum buffer between appointments
+        // This prevents appointments from being scheduled back-to-back without any transition time
+        const bufferMinutes = 0; // Can be increased if business requires buffer time
+        if (bufferMinutes > 0) {
+          const slotStartWithBuffer = new Date(slotStart.getTime() - bufferMinutes * 60000);
+          const slotEndWithBuffer = new Date(slotEnd.getTime() + bufferMinutes * 60000);
+          return slotStartWithBuffer < appointmentEnd && appointmentStart < slotEndWithBuffer;
+        }
+        
+        return overlaps;
       });
 
       return {

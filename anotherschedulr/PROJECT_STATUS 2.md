@@ -61,106 +61,56 @@ graph TB
 
 ## 📍 Last Session Summary
 
-**Date**: August 15, 2025  
+**Date**: August 13, 2025  
 **Duration**: Extended session  
-**Focus**: CRITICAL FIX - Timezone Double-Booking Vulnerability Resolved
+**Focus**: Calendar Display Fixes & Business Hours Enforcement
 
 ### What Was Accomplished
-1. ✅ **CRITICAL SECURITY FIX: Timezone Double-Booking Vulnerability**
-   - **RESOLVED CRITICAL BUG**: Fixed backwards timezone conversion causing complete failure of conflict detection
-   - **ELIMINATED DOUBLE-BOOKING RISK**: Time slots 10:00-11:30 AM now properly blocked when appointment exists
-   - **ROOT CAUSE**: Timezone offset calculation was backwards, creating 4+ hour time differences
-   - **IMPACT**: Prevented severe business disruption from scheduling conflicts and customer confusion
-   - **TECHNICAL FIX**: Simplified slot creation to use JavaScript's natural timezone handling
+1. ✅ **Calendar Layout Critical Fixes**
+   - Fixed whitespace issue by replacing `grid-cols-8` with explicit grid template (`120px repeat(7, 1fr)`)
+   - Updated appointment positioning logic from 8-column to 7-column math for precise alignment
+   - Added overflow-x-hidden to prevent horizontal scrolling and eliminate whitespace
+   - Constrained absolute positioned elements with proper width/maxWidth settings
 
-2. ✅ **Comprehensive Debugging & Investigation**
-   - Added extensive debug logging to trace timezone conversion issues
-   - Performed database query analysis to verify appointment data integrity
-   - Tested multiple timezone conversion approaches before finding correct solution
-   - Created comprehensive bug report documentation (CRITICAL_TIMEZONE_BUG_REPORT_2025_08_15.md)
-   - Implemented prevention measures for future timezone-related issues
+2. ✅ **Business Hours Enforcement Implementation**
+   - Updated `getAppointmentsForDay()` to completely filter out appointments for unavailable days
+   - Added comprehensive business hours validation to appointment creation API endpoints
+   - Implemented calendar display logic that respects `{ open: false }` settings
+   - Added clear error messages for API when attempting to book on unavailable days
 
-3. ✅ **PREVIOUS FIXES: Availability API Enum Error**
-   - Fixed invalid AppointmentStatus enum value causing API failures ("PENDING" → "SCHEDULED")
-   - Resolved "Failed to fetch availability" error that prevented calendar from loading time slots
-   - Calendar now successfully fetches and displays available appointment times
+3. ✅ **Mock Data Business Hours Compliance**
+   - Enhanced seeding script to validate business hours before creating appointments
+   - Added smart day selection that only creates appointments for available days
+   - Implemented business hours checking with clear feedback and warnings
+   - Verified existing database has no appointments violating business hours
 
-4. ✅ **Enhanced Conflict Detection Algorithm**
-   - Completely redesigned conflict detection to be more robust and accurate
-   - Added comprehensive overlap detection algorithm with detailed documentation
-   - Properly accounts for full service duration in conflict calculations
-   - Added support for optional buffer time between appointments
-   - Ensures ONLY truly available time slots are shown to users
-
-3. ✅ **Complete Calendar & Time Selection Implementation** (Previously Completed)
-   - Built interactive Calendar component with month navigation and date selection
-   - Created availability API endpoint (`/api/public/[userId]/availability`) for real-time time slot checking
-   - Implemented service duration-based time slot generation (15-minute intervals)
-   - Added conflict detection with existing appointments for accurate availability
-
-2. ✅ **Complete Booking Flow Integration**
-   - Extended public booking page with Categories → Services → Calendar navigation
-   - Added service summary display during date/time selection
-   - Implemented proper state management across all booking views
-   - Integrated Calendar component into scheduling page builder preview
-
-3. ✅ **Availability API System**
-   - Fixed critical type error in availability API (removed invalid `.toLocaleLowerCase()`)
-   - Added robust business hours parsing with JSON string handling
-   - Implemented comprehensive error handling and fallback to default hours
-   - Added timezone support and proper date handling
-
-4. ✅ **Session Context & Preview Fixes**
-   - Added session context to scheduling page builder component
-   - Fixed preview mode using actual user ID instead of "preview-user"
-   - Updated booking URLs and embed codes to use real user data
-   - Added loading states to prevent invalid API calls
-
-5. ✅ **Business Hours Calendar Integration - CRITICAL FIX**
-   - Created `/api/public/[userId]/business-hours` endpoint for calendar business hours fetching
-   - Added `isClosedDate()` helper function to detect closed business days
-   - Updated date selection logic to prevent clicking on closed days (Sunday/Saturday)
-   - Implemented proper visual styling - closed days now appear grayed out like past dates
-   - Added loading states for business hours fetching
+4. ✅ **API Protection & Data Integrity**
+   - Added business hours validation layer in `/api/appointments/route.ts`
+   - Implemented both day-level (`open: false/true`) and time-range validation
+   - Created cleanup verification system to check for existing violations
+   - Enhanced error handling with descriptive messages for business logic violations
 
 ### Issues Resolved
-- **✅ CRITICAL RESOLVED**: Timezone double-booking vulnerability - backwards timezone conversion causing complete conflict detection failure
-- **✅ RESOLVED**: Critical Availability API enum validation error - invalid "PENDING" status causing Prisma failures
-- **✅ RESOLVED**: "Failed to fetch availability" error preventing calendar time slots from loading
-- **✅ RESOLVED**: Timezone offset bugs preventing slot-to-appointment time alignment
-- **✅ RESOLVED**: Insufficient conflict detection algorithm not properly accounting for service duration
-- **✅ RESOLVED**: Calendar closed day selection issue - users can no longer select unavailable business days
-- **✅ RESOLVED**: Availability API type errors preventing proper time slot loading
-- **✅ RESOLVED**: Preview component using fake user ID causing 404 errors
-- **✅ RESOLVED**: Inconsistent component behavior between preview and live booking
-- **✅ RESOLVED**: Missing business hours enforcement in calendar UI
+- Fixed critical calendar whitespace issue causing poor UI layout
+- Eliminated appointment positioning overflow into adjacent day columns
+- Resolved business hours enforcement gaps in calendar display
+- Corrected API endpoints to prevent bookings on unavailable days
+- Fixed mock data seeding to respect business hours settings
 
-### ✅ CRITICAL SECURITY ISSUE RESOLVED  
-**✅ TIMEZONE DOUBLE-BOOKING VULNERABILITY ELIMINATED**
-- **CRITICAL**: Fixed backwards timezone conversion that allowed double-booking
-- **SECURITY**: Eliminated ability for customers to book conflicting appointments  
-- **RELIABILITY**: Time slot conflict detection now works correctly across all timezones
-- **BUSINESS IMPACT**: Prevents scheduling chaos and customer service issues
-- **TECHNICAL**: Proper UTC alignment between slots and existing appointments
-- **VALIDATION**: 10:00-11:30 AM appointment now properly blocks those time slots
-
-**✅ CALENDAR CLOSED DAY SELECTION FIXED**
-- Closed business days (Sunday/Saturday) now appear grayed out and are non-clickable
-- Visual consistency with past dates - same styling for all unavailable dates
-- Users can no longer accidentally select dates when business is closed
-- Eliminates confusion of seeing "No available times" after clicking closed days
-- Calendar now perfectly respects business hours configuration
+### ⚠️ CRITICAL ISSUE IDENTIFIED
+**❌ APPOINTMENTS STILL DISPLAYING ON UNAVAILABLE DAYS FOR USER**
+- Despite implementing comprehensive business hours enforcement
+- Calendar may still be showing appointments on Saturday or other unavailable days
+- **REQUIRES IMMEDIATE FIX**: Calendar display logic needs verification and debugging
+- **Business Logic Violation**: Appointments should NEVER appear on days marked as `{ open: false }`
+- **User Impact**: High - breaks core business logic and user expectations
 
 ### Next Steps Identified
-- **IMMEDIATE PRIORITY**: Implement booking confirmation flow after date/time selection
-- Create appointment submission API endpoint for public bookings  
-- Add form validation and error handling for booking process
-- Test complete end-to-end booking flow with real appointment data
-- Add email notifications for new bookings (customer + business owner)
-- Enhance mobile responsiveness for calendar interface
-- Add calendar drag-and-drop rescheduling functionality  
-- Add calendar keyboard navigation for accessibility
-- Implement recurring appointment scheduling
+- **URGENT**: Debug and fix appointments displaying on unavailable days
+- Verify business hours loading and parsing in calendar component
+- Test calendar display with different business hours configurations
+- Ensure business hours are properly loaded from schedulingPage relation
+- Add comprehensive logging to business hours filtering logic
 
 ## 🎯 Current Sprint Items
 
@@ -174,16 +124,13 @@ graph TB
    - 🚧 Settings tab implementation
    - 📋 Link generation and sharing
 
-2. **Calendar Functionality** [95% Complete]
+2. **Calendar Functionality** [85% Complete]
    - ✅ Week view with hourly slots
    - ✅ Precise time positioning
    - ✅ API integration
    - ✅ NewAppointmentPanel with client form
-   - ✅ Complete Calendar & Time selection component
-   - ✅ Business hours integration with visual enforcement
-   - ✅ Categories → Services → Calendar booking flow
+   - 🚧 Date & Time picker integration
    - 📋 Drag-and-drop rescheduling
-   - 📋 Booking confirmation flow
 
 3. **UI/UX Standards & Accessibility** [95% Complete]
    - ✅ Cursor-pointer on all interactive elements
@@ -222,20 +169,14 @@ graph TB
 - [x] Font family selector with real-time preview
 - [x] Navigation UI consistency across pages
 - [x] WCAG 2.2 Level AA form compliance
-- [x] Complete Calendar & Time Selection component
-- [x] Business hours calendar integration
-- [x] Complete booking flow (Categories → Services → Calendar)
-- [x] **🔒 TIMEZONE-AWARE CONFLICT DETECTION** - Critical security fix preventing double-booking
-- [x] Availability API system with robust timezone handling
-- [x] Visual enforcement of business hours in calendar UI
-- [x] Comprehensive bug documentation and prevention measures
 
 ### 🚧 In Progress
 - [ ] Scheduling page color picker functionality (0%)
 - [ ] Scheduling page settings tab (0%)
-- [ ] Booking confirmation flow (0%)
+- [ ] Public booking URL generation (0%)
+- [ ] Appointment creation flow (70%)
+- [ ] Date & Time picker (10%)
 - [ ] Client autocomplete search (0%)
-- [ ] Appointment drag-and-drop rescheduling (0%)
 - [ ] Calendar month view (20%)
 - [ ] Email notifications (10%)
 
@@ -252,30 +193,19 @@ graph TB
 - [ ] Resource booking
 
 ### 🐛 Known Issues
-1. **Scheduling Page**: Color picker inputs need real-time preview functionality
-2. **Auth**: Password reset flow not implemented
-3. **UI**: Mobile responsiveness needs improvement on booking page
-4. **Performance**: N+1 queries in public services endpoint
-5. **Accessibility**: Modal focus trapping incomplete
-6. **NewAppointmentPanel**: Client form not yet connected to API
-7. **Booking Flow**: Confirmation step after date/time selection not implemented
-
-### 🔒 Security Issues Resolved
-- **✅ CRITICAL**: Timezone double-booking vulnerability eliminated (August 15, 2025)
-- **✅ CRITICAL**: Scheduling conflict detection now working correctly
-- **✅ HIGH**: Business hours enforcement preventing invalid bookings
+1. **🚨 CRITICAL - Calendar Business Hours**: Appointments still displaying on unavailable days despite enforcement implementation
+2. **Scheduling Page**: Color picker inputs need real-time preview functionality
+3. **Calendar**: Date & Time picker needs implementation in newAppointmentPanel
+4. **Auth**: Password reset flow not implemented
+5. **UI**: Mobile responsiveness needs improvement on booking page
+6. **Performance**: N+1 queries in public services endpoint
+7. **Accessibility**: Modal focus trapping incomplete
+8. **NewAppointmentPanel**: Client form not yet connected to API
 
 ## 📝 Recent Changes Log
 
 | Date | Feature | Files Modified | Notes |
 |------|---------|---------------|-------|
-| 2025-08-15 | **🚨 CRITICAL SECURITY FIX**: Timezone Double-Booking Vulnerability | `src/app/api/public/[userId]/availability/route.ts`, `CRITICAL_TIMEZONE_BUG_REPORT_2025_08_15.md` | ✅ **CRITICAL RESOLVED**: Fixed backwards timezone conversion causing complete conflict detection failure, eliminated double-booking risk, created comprehensive bug documentation, SECURITY ISSUE RESOLVED |
-| 2025-08-15 | **CRITICAL FIX**: Availability API Enum Error + Enhanced Conflict Detection | `src/app/api/public/[userId]/availability/route.ts` | ✅ **RESOLVED**: Fixed invalid "PENDING" enum causing API failures, enhanced conflict detection algorithm to properly account for service duration, now shows ONLY truly available time slots |
-| 2025-08-15 | **MAJOR FEATURE**: Complete Calendar & Time Selection | `src/components/Calendar.tsx`, `src/app/api/public/[userId]/availability/route.ts`, `src/app/api/public/[userId]/business-hours/route.ts` | ✅ **COMPLETED**: Full calendar implementation with business hours integration, visual closed-day enforcement, and complete booking flow |
-| 2025-08-15 | **CRITICAL FIX**: Calendar Closed Day Selection | `src/components/Calendar.tsx` | ✅ **RESOLVED**: Closed business days now appear grayed out and non-clickable, preventing user confusion |
-| 2025-08-15 | Booking Flow Integration | `src/app/book/[userId]/page.tsx`, `src/components/schedulingPageBuilder.tsx` | ✅ Categories → Services → Calendar navigation with state management |
-| 2025-08-15 | Availability API System | `src/app/api/public/[userId]/availability/route.ts` | ✅ Real-time time slot checking with conflict detection and business hours validation |
-| 2025-08-15 | Session Context Fixes | `src/components/schedulingPageBuilder.tsx` | ✅ Fixed preview mode to use actual user ID instead of "preview-user" |
 | 2025-08-13 | **CRITICAL BUG FIX**: Appointment Column Positioning | `src/app/calendar/page.tsx`, `CLAUDE.md`, `CRITICAL_BUG_REPORT_2025_08_13.md` | ✅ **RESOLVED**: Fixed appointments appearing on Saturday (closed day). Root cause: CSS overlap calculations shifted appointments between day columns. Implemented safe positioning pattern. |
 | 2025-08-13 | Business Hours Enforcement | `src/app/calendar/page.tsx`, `src/app/api/appointments/route.ts`, `scripts/seed-mock-data-safe.js` | ✅ Business logic working correctly - appointments filtered properly |
 | 2025-08-13 | Calendar Layout Fixes | `src/app/calendar/page.tsx` | Fixed whitespace and positioning issues |
@@ -348,15 +278,11 @@ graph TB
 
 ### ✅ Ready
 - Core authentication flow
-- Complete appointment booking flow (Categories → Services → Calendar)
-- Business hours enforcement and visual integration
+- Basic appointment scheduling
 - Service management
 - Client management
-- Public booking page with calendar functionality
-- Scheduling page builder with preview
 
 ### 🚧 Needs Work
-- Booking confirmation flow
 - Environment variable management
 - Database migrations for production
 - Error monitoring setup
