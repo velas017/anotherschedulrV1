@@ -514,7 +514,6 @@ const PublicBookingPage = () => {
                       userId={userId}
                       serviceDuration={selectedService.duration}
                       onDateTimeSelect={handleDateTimeSelect}
-                      selectedDateTime={selectedDateTime}
                     />
                   </div>
                 </div>
