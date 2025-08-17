@@ -43,6 +43,45 @@ This is a Next.js 15 application using App Router with the following stack:
 ### Database Schema
 Main entities: User, Client, Service, Appointment (see `prisma/schema.prisma`)
 
+## 🔒 PROTECTED COMPONENT LAYOUTS
+
+### Calendar Component UI Layout - LOCKED 🚫
+**File**: `src/components/Calendar.tsx`  
+**Usage**: Scheduling page date/time selection  
+**Status**: **LAYOUT MODIFICATIONS PROHIBITED**
+
+**Protected Layout Structure**:
+```jsx
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {/* Left Column: Calendar Grid */}
+  <div className="space-y-4">
+    {/* Calendar days grid */}
+  </div>
+  
+  {/* Right Column: Time Slots */}
+  <div className="space-y-4">
+    {/* Available times */}
+  </div>
+</div>
+```
+
+**Required Behavior**:
+- ✅ Side-by-side layout: Calendar left, times right
+- ✅ Direct time slot selection (immediate `onDateTimeSelect` call)
+- ✅ No confirmation menus or additional selection steps
+- ✅ Responsive grid layout with `lg:grid-cols-2`
+
+**Historical Context**:
+- Restored from commit `4185982` on 2025-08-17
+- User explicitly confirmed this is the correct and final layout
+- **NEVER modify this layout without explicit user permission**
+
+**Violation Prevention**:
+- Do not add time selection confirmation menus
+- Do not change grid layout or column structure
+- Do not alter the side-by-side positioning
+- Do not modify the direct selection behavior
+
 ## 🔴 CRITICAL: Session Management & Documentation
 
 **MANDATORY ACTIONS FOR EVERY SESSION:**
