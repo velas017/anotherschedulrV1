@@ -47,6 +47,7 @@ const Calendar: React.FC<CalendarProps> = ({
   const [timezone] = useState('EASTERN TIME (GMT-04:00)');
   const [businessHours, setBusinessHours] = useState<BusinessHours>({});
   const [isLoadingBusinessHours, setIsLoadingBusinessHours] = useState(true);
+  const [pendingTimeSelection, setPendingTimeSelection] = useState<string | null>(null);
 
   // Get the first day of the current month
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -67,6 +68,7 @@ const Calendar: React.FC<CalendarProps> = ({
     });
     setSelectedDate(null);
     setAvailableTimeSlots([]);
+    setPendingTimeSelection(null);
   }, []);
 
   // Fetch available time slots for a specific date
@@ -159,15 +161,22 @@ const Calendar: React.FC<CalendarProps> = ({
     }
     
     setSelectedDate(clickedDate);
+    setPendingTimeSelection(null);
     fetchAvailableSlots(clickedDate);
   }, [currentDate, fetchAvailableSlots, isClosedDate]);
 
   // Handle time slot selection
   const handleTimeSlotClick = useCallback((time: string) => {
-    if (selectedDate) {
-      onDateTimeSelect(selectedDate, time);
+    setPendingTimeSelection(time);
+  }, []);
+
+  // Handle select and continue
+  const handleSelectAndContinue = useCallback(() => {
+    if (selectedDate && pendingTimeSelection) {
+      onDateTimeSelect(selectedDate, pendingTimeSelection);
+      setPendingTimeSelection(null);
     }
-  }, [selectedDate, onDateTimeSelect]);
+  }, [selectedDate, pendingTimeSelection, onDateTimeSelect]);
 
   // Format time for display
   const formatTime = (time: string) => {
@@ -331,19 +340,34 @@ const Calendar: React.FC<CalendarProps> = ({
                   {availableTimeSlots
                     .filter(slot => slot.available)
                     .map((slot) => (
-                      <button
-                        key={slot.time}
-                        onClick={() => handleTimeSlotClick(slot.time)}
-                        className={`
-                          p-3 text-center border border-gray-200 rounded-lg font-medium transition-colors cursor-pointer
-                          ${selectedDateTime?.time === slot.time 
-                            ? 'bg-black text-white' 
-                            : 'bg-white text-gray-900 hover:bg-gray-50'
-                          }
-                        `}
-                      >
-                        {formatTime(slot.time)}
-                      </button>
+                      <div key={slot.time} className="relative">
+                        <button
+                          onClick={() => handleTimeSlotClick(slot.time)}
+                          className={`
+                            w-full p-3 text-center border border-gray-200 rounded-lg font-medium transition-colors cursor-pointer
+                            ${pendingTimeSelection === slot.time 
+                              ? 'bg-black text-white' 
+                              : 'bg-white text-gray-900 hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          {formatTime(slot.time)}
+                        </button>
+                        
+                        {/* Select and Continue Dropdown - positioned below selected button */}
+                        {pendingTimeSelection === slot.time && (
+                          <div className="absolute z-50 top-full mt-2 left-1/2 transform -translate-x-1/2">
+                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                              <button 
+                                onClick={handleSelectAndContinue}
+                                className="px-4 py-2 text-gray-900 hover:bg-gray-50 rounded-lg whitespace-nowrap cursor-pointer transition-colors"
+                              >
+                                Select and continue
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                 </div>
               ) : (
