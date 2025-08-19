@@ -50,10 +50,21 @@ const SchedulingPageBuilder = () => {
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('Inter');
   
   // New state for category/services/calendar view management
-  const [currentView, setCurrentView] = useState<'categories' | 'services' | 'calendar'>('categories');
+  const [currentView, setCurrentView] = useState<'categories' | 'services' | 'calendar' | 'customerInfo'>('categories');
   const [selectedCategoryData, setSelectedCategoryData] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDateTime, setSelectedDateTime] = useState<{date: Date | null, time: string | null}>({date: null, time: null});
+  
+  // Customer form state
+  const [customerInfo, setCustomerInfo] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    notes: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Load saved font family from localStorage
   useEffect(() => {
@@ -165,8 +176,11 @@ const SchedulingPageBuilder = () => {
 
   const handleDateTimeSelect = useCallback((date: Date, time: string) => {
     setSelectedDateTime({date, time});
-    // Future: Navigate to booking confirmation
-    console.log('Selected date/time:', date, time);
+    setCurrentView('customerInfo');
+  }, []);
+
+  const handleBackToCalendar = useCallback(() => {
+    setCurrentView('calendar');
   }, []);
 
   // Service formatting utilities (matching public booking page)
@@ -189,6 +203,94 @@ const SchedulingPageBuilder = () => {
 
   const formatServiceSummary = (duration: number, price: number) => {
     return `${formatServiceDuration(duration)} @ ${formatServicePrice(price)}`;
+  };
+
+  // Format date and time for display
+  const formatAppointmentDateTime = (date: Date | null, time: string | null) => {
+    if (!date || !time) return '';
+    
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    
+    const dateStr = date.toLocaleDateString('en-US', options);
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    
+    // Format as "Tuesday, August 19th, 2025 at 2:15 PM EDT"
+    const dayNum = date.getDate();
+    const suffix = dayNum % 10 === 1 && dayNum !== 11 ? 'st' :
+                   dayNum % 10 === 2 && dayNum !== 12 ? 'nd' :
+                   dayNum % 10 === 3 && dayNum !== 13 ? 'rd' : 'th';
+    
+    const formattedDate = dateStr.replace(/\d+/, dayNum + suffix);
+    return `${formattedDate} at ${displayHour}:${minutes} ${ampm} EDT`;
+  };
+
+  // Handle form submission
+  const handleSubmitBooking = async () => {
+    // Validate required fields
+    if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email || !customerInfo.phone) {
+      setSubmissionError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerInfo.email)) {
+      setSubmissionError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate phone number (basic validation)
+    const phoneDigits = customerInfo.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      setSubmissionError('Please enter a valid phone number');
+      return;
+    }
+
+    if (!selectedService || !selectedDateTime.date || !selectedDateTime.time) {
+      setSubmissionError('Missing appointment details');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmissionError(null);
+
+    try {
+      // In the preview mode, just show a mock success message
+      console.log('Preview mode booking:', {
+        serviceId: selectedService.id,
+        date: selectedDateTime.date.toISOString().split('T')[0],
+        time: selectedDateTime.time,
+        firstName: customerInfo.firstName,
+        lastName: customerInfo.lastName,
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        notes: customerInfo.notes
+      });
+      
+      // Show success message
+      alert('Preview booking submitted successfully! This is a preview mode.');
+      
+      // Reset form and go back to categories
+      setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+      setSelectedDateTime({ date: null, time: null });
+      setSelectedService(null);
+      setSelectedCategoryData(null);
+      setCurrentView('categories');
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      setSubmissionError('Failed to submit booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -596,6 +698,146 @@ const SchedulingPageBuilder = () => {
                           <p className="text-gray-500 mt-2">Loading availability...</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {currentView === 'customerInfo' && selectedService && selectedDateTime.date && selectedDateTime.time && (
+                <>
+                  {/* Customer Information View */}
+                  {/* Back Navigation */}
+                  <div className="mb-6">
+                    <button
+                      onClick={handleBackToCalendar}
+                      className="flex items-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5 mr-1" />
+                      <span className="text-sm font-medium">DATE & TIME</span>
+                    </button>
+                  </div>
+
+                  {/* Appointment Summary */}
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Information</h2>
+                    
+                    {/* Appointment Details Bubble */}
+                    <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                      <h3 className="text-sm font-medium text-gray-600 mb-3">APPOINTMENT</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {selectedService.name}
+                          </h4>
+                          <p className="text-gray-600">
+                            {formatServiceDuration(selectedService.duration)} @ ${selectedService.price.toFixed(2)}
+                          </p>
+                          <p className="text-gray-600 mt-2">
+                            {formatAppointmentDateTime(selectedDateTime.date, selectedDateTime.time)}
+                          </p>
+                        </div>
+                        {selectedService.description && (
+                          <div className="pt-3 border-t border-gray-200">
+                            <p className="text-sm text-gray-600">
+                              {selectedService.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Customer Information Form */}
+                    <div className="space-y-8">
+                      <h3 className="text-sm font-medium text-gray-800 tracking-wide">YOUR INFORMATION</h3>
+                      
+                      {/* First Name */}
+                      <div className="space-y-2">
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-900 uppercase tracking-wide">
+                          FIRST NAME<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          value={customerInfo.firstName}
+                          onChange={(e) => setCustomerInfo({...customerInfo, firstName: e.target.value})}
+                          className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                          required
+                        />
+                      </div>
+
+                      {/* Last Name */}
+                      <div className="space-y-2">
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-900 uppercase tracking-wide">
+                          LAST NAME<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          value={customerInfo.lastName}
+                          onChange={(e) => setCustomerInfo({...customerInfo, lastName: e.target.value})}
+                          className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                          required
+                        />
+                      </div>
+
+                      {/* Phone */}
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-900 uppercase tracking-wide">
+                          PHONE<span className="text-red-500">*</span>
+                        </label>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg">🇺🇸</span>
+                            <span className="text-gray-600 text-sm">+1</span>
+                          </div>
+                          <input
+                            type="tel"
+                            id="phone"
+                            value={customerInfo.phone}
+                            onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                            placeholder="1111111111"
+                            className="flex-1 px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email */}
+                      <div className="space-y-2">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-900 uppercase tracking-wide">
+                          EMAIL<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          value={customerInfo.email}
+                          onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+                          placeholder="Add..."
+                          className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Use a comma or press enter/return to add additional email addresses
+                        </p>
+                      </div>
+
+                      {/* Error Message */}
+                      {submissionError && (
+                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-600">{submissionError}</p>
+                        </div>
+                      )}
+
+                      {/* Submit Button */}
+                      <div className="pt-8">
+                        <button
+                          onClick={handleSubmitBooking}
+                          disabled={isSubmitting}
+                          className="w-full px-6 py-4 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wide"
+                        >
+                          {isSubmitting ? 'BOOKING...' : 'BOOK APPOINTMENT'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
