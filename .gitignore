@@ -1,39 +1,41 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# ─── DEPENDENCIES ─────────────────────────────────────────────
-anotherschedulr/node_modules/
-anotherschedulr/.pnp
-anotherschedulr/.pnp.*
-anotherschedulr/.yarn/*
-!anotherschedulr/.yarn/patches
-!anotherschedulr/.yarn/plugins
-!anotherschedulr/.yarn/releases
-!anotherschedulr/.yarn/versions
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# ─── TESTING ──────────────────────────────────────────────────
-anotherschedulr/coverage/
+# testing
+/coverage
 
-# ─── NEXT.JS ──────────────────────────────────────────────────
-anotherschedulr/.next/
-anotherschedulr/out/
+# next.js
+/.next/
+/out/
 
-# ─── PRODUCTION ───────────────────────────────────────────────
-anotherschedulr/build/
+# production
+/build
 
-# ─── MISC ─────────────────────────────────────────────────────
+# misc
 .DS_Store
 *.pem
 
-# ─── DEBUG ────────────────────────────────────────────────────
-anotherschedulr/npm-debug.log*
-anotherschedulr/yarn-debug.log*
-anotherschedulr/yarn-error.log*
-anotherschedulr/.pnpm-debug.log*
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# ─── ENVIRONMENT FILES ────────────────────────────────────────
-anotherschedulr/.env*
-anotherschedulr/next-env.d.ts
+# env files (can opt-in for committing if needed)
+.env*
 
-# ─── VERCEL ───────────────────────────────────────────────────
-anotherschedulr/.vercel
+# vercel
+.vercel
 
+# typescript
+*.tsbuildinfo
+next-env.d.ts

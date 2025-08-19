@@ -1,0 +1,39 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# ─── DEPENDENCIES ─────────────────────────────────────────────
+anotherschedulr/node_modules/
+anotherschedulr/.pnp
+anotherschedulr/.pnp.*
+anotherschedulr/.yarn/*
+!anotherschedulr/.yarn/patches
+!anotherschedulr/.yarn/plugins
+!anotherschedulr/.yarn/releases
+!anotherschedulr/.yarn/versions
+
+# ─── TESTING ──────────────────────────────────────────────────
+anotherschedulr/coverage/
+
+# ─── NEXT.JS ──────────────────────────────────────────────────
+anotherschedulr/.next/
+anotherschedulr/out/
+
+# ─── PRODUCTION ───────────────────────────────────────────────
+anotherschedulr/build/
+
+# ─── MISC ─────────────────────────────────────────────────────
+.DS_Store
+*.pem
+
+# ─── DEBUG ────────────────────────────────────────────────────
+anotherschedulr/npm-debug.log*
+anotherschedulr/yarn-debug.log*
+anotherschedulr/yarn-error.log*
+anotherschedulr/.pnpm-debug.log*
+
+# ─── ENVIRONMENT FILES ────────────────────────────────────────
+anotherschedulr/.env*
+anotherschedulr/next-env.d.ts
+
+# ─── VERCEL ───────────────────────────────────────────────────
+anotherschedulr/.vercel
+

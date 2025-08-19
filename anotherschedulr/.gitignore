@@ -1,0 +1,29 @@
+node_modules
+
+# Keep environment variables out of version control
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+
+# Generated files
+/src/generated/prisma
+
+# IDE files
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next
+out
+dist
