@@ -55,12 +55,32 @@ const SchedulingPageBuilder: React.FC = () => {
     console.log('Booking successful in preview:', appointment);
   };
 
-  // Load saved font family from localStorage
+  // Load font family from database first, fallback to localStorage
   useEffect(() => {
-    const savedFont = localStorage.getItem('schedulingPageFontFamily');
-    if (savedFont) {
-      setSelectedFontFamily(savedFont);
-    }
+    const loadFontSettings = async () => {
+      try {
+        // First try to load from database
+        const response = await fetch('/api/scheduling-page/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          if (settings.fontFamily) {
+            setSelectedFontFamily(settings.fontFamily);
+            localStorage.setItem('schedulingPageFontFamily', settings.fontFamily);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading font settings from database:', error);
+      }
+      
+      // Fallback to localStorage
+      const savedFont = localStorage.getItem('schedulingPageFontFamily');
+      if (savedFont) {
+        setSelectedFontFamily(savedFont);
+      }
+    };
+
+    loadFontSettings();
   }, []);
 
   // Load Google Fonts for preview
@@ -130,10 +150,29 @@ const SchedulingPageBuilder: React.FC = () => {
     }));
   };
 
-  const handleFontFamilyChange = (font: string) => {
+  const handleFontFamilyChange = async (font: string) => {
     setSelectedFontFamily(font);
-    // Save to localStorage for persistence
+    // Save to localStorage for immediate preview
     localStorage.setItem('schedulingPageFontFamily', font);
+    
+    // Save to database for public page persistence
+    try {
+      const response = await fetch('/api/scheduling-page/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fontFamily: font
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save font family to database');
+      }
+    } catch (error) {
+      console.error('Error saving font family:', error);
+    }
   };
 
   return (

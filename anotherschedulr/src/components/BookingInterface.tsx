@@ -202,42 +202,35 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
     setSubmissionError(null);
 
     try {
-      let apiEndpoint: string;
-      let successMessage: string;
-
       if (mode === 'preview') {
-        // Preview mode: Use session-based API if logged in, otherwise show preview message
-        if (session?.user?.id) {
-          apiEndpoint = `/api/public/${session.user.id}/booking`;
-          successMessage = `Real appointment booked successfully! Confirmation ID: {id}\n\nThis appointment will appear in your calendar.`;
-        } else {
-          // Fallback to preview mode if no session
-          console.log('Preview mode booking (no session):', {
-            serviceId: selectedService.id,
-            date: selectedDateTime.date.toISOString().split('T')[0],
-            time: selectedDateTime.time,
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            email: customerInfo.email,
-            phone: customerInfo.phone
-          });
-          
-          alert('Preview booking (no real appointment created - please log in for real bookings)');
-          
-          // Reset form and go back to categories
-          setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '' });
-          setSelectedDateTime({ date: null, time: null });
-          setSelectedService(null);
-          setSelectedCategoryData(null);
-          setCurrentView('categories');
-          
-          return;
-        }
-      } else {
-        // Public mode: Always use public API
-        apiEndpoint = `/api/public/${userId}/booking`;
-        successMessage = `Appointment booked successfully! Confirmation ID: {id}`;
+        // Preview mode: Simulate booking without creating real appointment
+        console.log('Preview mode booking simulation:', {
+          serviceId: selectedService.id,
+          date: selectedDateTime.date.toISOString().split('T')[0],
+          time: selectedDateTime.time,
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone
+        });
+        
+        // Simulate success
+        alert('Preview: Booking would be successful!\n\n(No real appointment created in preview mode)');
+        
+        // Reset form and go back to categories
+        setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '' });
+        setSelectedDateTime({ date: null, time: null });
+        setSelectedService(null);
+        setSelectedCategoryData(null);
+        setCurrentView('categories');
+        
+        setIsSubmitting(false);
+        return;
       }
+
+      // Public mode: Create real appointment
+      const apiEndpoint = `/api/public/${userId}/booking`;
+      const successMessage = `Appointment booked successfully! Confirmation ID: {id}`;
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -529,12 +522,12 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             </div>
 
             {/* Customer Information Form */}
-            <div className={mode === 'preview' ? "space-y-8" : "space-y-6"}>
-              <h3 className={`text-sm font-medium text-gray-600 ${mode === 'preview' ? 'tracking-wide' : ''}`}>YOUR INFORMATION</h3>
+            <div className="space-y-8">
+              <h3 className="text-sm font-medium text-gray-600 tracking-wide">YOUR INFORMATION</h3>
               
               {/* First Name */}
-              <div className={mode === 'preview' ? "space-y-2" : ""}>
-                <label htmlFor="firstName" className={`block text-sm font-medium text-gray-700 mb-1 ${mode === 'preview' ? 'uppercase tracking-wide text-gray-900' : ''}`}>
+              <div className="space-y-2">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
                   FIRST NAME<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -542,17 +535,14 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="firstName"
                   value={customerInfo.firstName}
                   onChange={(e) => setCustomerInfo({...customerInfo, firstName: e.target.value})}
-                  className={`w-full px-4 py-2 ${mode === 'preview' 
-                    ? 'px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0'
-                    : 'border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
                   required
                 />
               </div>
 
               {/* Last Name */}
-              <div className={mode === 'preview' ? "space-y-2" : ""}>
-                <label htmlFor="lastName" className={`block text-sm font-medium text-gray-700 mb-1 ${mode === 'preview' ? 'uppercase tracking-wide text-gray-900' : ''}`}>
+              <div className="space-y-2">
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
                   LAST NAME<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -560,56 +550,36 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="lastName"
                   value={customerInfo.lastName}
                   onChange={(e) => setCustomerInfo({...customerInfo, lastName: e.target.value})}
-                  className={`w-full px-4 py-2 ${mode === 'preview' 
-                    ? 'px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0'
-                    : 'border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
                   required
                 />
               </div>
 
               {/* Phone */}
-              <div className={mode === 'preview' ? "space-y-2" : ""}>
-                <label htmlFor="phone" className={`block text-sm font-medium text-gray-700 mb-1 ${mode === 'preview' ? 'uppercase tracking-wide text-gray-900' : ''}`}>
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
                   PHONE<span className="text-red-500">*</span>
                 </label>
-                {mode === 'preview' ? (
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">🇺🇸</span>
-                      <span className="text-gray-600 text-sm">+1</span>
-                    </div>
-                    <input
-                      type="tel"
-                      id="phone"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                      placeholder="1111111111"
-                      className="flex-1 px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
-                      required
-                    />
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">🇺🇸</span>
+                    <span className="text-gray-600 text-sm">+1</span>
                   </div>
-                ) : (
-                  <div className="flex">
-                    <div className="flex items-center px-3 border border-r-0 border-gray-300 rounded-l-lg bg-gray-50">
-                      <span className="text-sm">🇺🇸 +1</span>
-                    </div>
-                    <input
-                      type="tel"
-                      id="phone"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                      placeholder="(555) 123-4567"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                )}
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={customerInfo.phone}
+                    onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                    placeholder="1111111111"
+                    className="flex-1 px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Email */}
-              <div className={mode === 'preview' ? "space-y-2" : ""}>
-                <label htmlFor="email" className={`block text-sm font-medium text-gray-700 mb-1 ${mode === 'preview' ? 'uppercase tracking-wide text-gray-900' : ''}`}>
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
                   EMAIL<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -618,10 +588,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   value={customerInfo.email}
                   onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
                   placeholder="Add..."
-                  className={`w-full px-4 py-2 ${mode === 'preview' 
-                    ? 'px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400'
-                    : 'border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                  }`}
+                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -637,16 +604,11 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
               )}
 
               {/* Submit Button */}
-              <div className={mode === 'preview' ? "pt-8" : "pt-6"}>
+              <div className="pt-8">
                 <button
                   onClick={handleSubmitBooking}
                   disabled={isSubmitting}
-                  className={`w-full px-6 text-white rounded-lg font-medium hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                    mode === 'preview' 
-                      ? 'py-4 bg-black text-sm uppercase tracking-wide hover:bg-gray-800' 
-                      : 'py-3 hover:opacity-90'
-                  }`}
-                  style={mode === 'public' ? { backgroundColor: config.primaryColor } : {}}
+                  className="w-full px-6 py-4 bg-black text-white rounded-lg font-medium text-sm uppercase tracking-wide hover:bg-gray-800 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? 'BOOKING...' : 'BOOK APPOINTMENT'}
                 </button>

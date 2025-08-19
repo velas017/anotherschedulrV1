@@ -66,12 +66,28 @@ const PublicBookingPage = () => {
         // API Response received successfully
         
         setCategories(data.categories || []);
-        setConfig(data.config || {
+        const configData = data.config || {
           primaryColor: '#000000',
           secondaryColor: '#6b7280', 
           fontFamily: 'Inter',
           allowOnlineBooking: true
-        });
+        };
+        setConfig(configData);
+
+        // Load Google Fonts dynamically for the configured font
+        const fontFamily = configData.fontFamily || 'Inter';
+        const existingLink = document.getElementById('google-fonts-public');
+        
+        if (existingLink) {
+          document.head.removeChild(existingLink);
+        }
+        
+        const link = document.createElement('link');
+        link.id = 'google-fonts-public';
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@400;500;600&display=swap`;
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        
       } catch (error) {
         console.error('Error fetching booking data:', error);
         setError('Unable to load booking page');
