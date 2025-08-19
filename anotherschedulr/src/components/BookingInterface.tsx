@@ -535,7 +535,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="firstName"
                   value={customerInfo.firstName}
                   onChange={(e) => setCustomerInfo({...customerInfo, firstName: e.target.value})}
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
                   required
                 />
               </div>
@@ -550,7 +550,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="lastName"
                   value={customerInfo.lastName}
                   onChange={(e) => setCustomerInfo({...customerInfo, lastName: e.target.value})}
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
                   required
                 />
               </div>
@@ -588,7 +588,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   value={customerInfo.email}
                   onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
                   placeholder="Add..."
-                  className="w-full px-0 py-3 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
