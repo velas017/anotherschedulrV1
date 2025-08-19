@@ -37,7 +37,9 @@ interface SchedulingPageConfig {
 
 const PublicBookingPage = () => {
   const params = useParams();
-  const userId = params.userId as string;
+  const userIdOrSubdomain = params.userId as string;
+  const [actualUserId, setActualUserId] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(true);
   
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [config, setConfig] = useState<SchedulingPageConfig>({
@@ -49,13 +51,52 @@ const PublicBookingPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // First resolve userId from subdomain if needed
+  useEffect(() => {
+    const resolveUserId = async () => {
+      try {
+        setIsResolving(true);
+        
+        // Check if userIdOrSubdomain is a valid cuid (user ID) or subdomain
+        const cuidPattern = /^c[0-9a-z]{24}$/i;
+        
+        if (cuidPattern.test(userIdOrSubdomain)) {
+          // It's a user ID, use directly
+          setActualUserId(userIdOrSubdomain);
+        } else {
+          // It's likely a subdomain, resolve to user ID via API
+          const response = await fetch(`/api/subdomain/resolve?subdomain=${encodeURIComponent(userIdOrSubdomain)}`);
+          if (response.ok) {
+            const data = await response.json();
+            setActualUserId(data.userId);
+          } else {
+            setError('Booking page not found');
+            setActualUserId(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error resolving user:', error);
+        setError('Unable to load booking page');
+        setActualUserId(null);
+      } finally {
+        setIsResolving(false);
+      }
+    };
+
+    if (userIdOrSubdomain) {
+      resolveUserId();
+    }
+  }, [userIdOrSubdomain]);
+
   useEffect(() => {
     const fetchData = async () => {
+      if (!actualUserId) return;
+      
       try {
         setIsLoading(true);
         
         // Fetch categories and services for this user
-        const response = await fetch(`/api/public/${userId}/services`);
+        const response = await fetch(`/api/public/${actualUserId}/services`);
         
         if (!response.ok) {
           throw new Error('Failed to load booking page');
@@ -96,10 +137,10 @@ const PublicBookingPage = () => {
       }
     };
 
-    if (userId) {
+    if (actualUserId) {
       fetchData();
     }
-  }, [userId]);
+  }, [actualUserId]);
 
   const getCategoriesWithServices = () => {
     const visibleCategories = categories.filter(cat => cat.isVisible);
@@ -114,7 +155,7 @@ const PublicBookingPage = () => {
     console.log('Public booking successful:', appointment);
   };
 
-  if (isLoading) {
+  if (isResolving || (isLoading && actualUserId)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -175,7 +216,7 @@ const PublicBookingPage = () => {
 
           <div className="p-6">
             <BookingInterface
-              userId={userId}
+              userId={actualUserId || ''}
               mode="public"
               config={config}
               categories={getCategoriesWithServices()}

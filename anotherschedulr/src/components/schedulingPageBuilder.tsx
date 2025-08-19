@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { buildSubdomainUrl } from '@/lib/subdomain-utils';
 import { 
   ChevronLeft, 
   Monitor, 
@@ -49,6 +50,7 @@ const SchedulingPageBuilder: React.FC = () => {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('Inter');
+  const [userSubdomain, setUserSubdomain] = useState<string | null>(null);
   
   // Booking success handler
   const handleBookingSuccess = (appointment: any) => {
@@ -82,6 +84,25 @@ const SchedulingPageBuilder: React.FC = () => {
 
     loadFontSettings();
   }, []);
+
+  // Load user's subdomain
+  useEffect(() => {
+    const loadUserSubdomain = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        const response = await fetch('/api/user/profile');
+        if (response.ok) {
+          const userData = await response.json();
+          setUserSubdomain(userData.subdomain);
+        }
+      } catch (error) {
+        console.error('Error loading user subdomain:', error);
+      }
+    };
+
+    loadUserSubdomain();
+  }, [session?.user?.id]);
 
   // Load Google Fonts for preview
   useEffect(() => {
@@ -310,9 +331,11 @@ const SchedulingPageBuilder: React.FC = () => {
                 </label>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <code className="text-sm text-gray-800">
-                    {session?.user?.id 
-                      ? `${window.location.origin}/book/${session.user.id}`
-                      : 'Loading...'}
+                    {userSubdomain 
+                      ? buildSubdomainUrl(userSubdomain)
+                      : session?.user?.id 
+                        ? `${window.location.origin}/book/${session.user.id}`
+                        : 'Loading...'}
                   </code>
                 </div>
               </div>
@@ -322,9 +345,11 @@ const SchedulingPageBuilder: React.FC = () => {
                 </label>
                 <textarea
                   readOnly
-                  value={session?.user?.id 
-                    ? `<iframe src="${window.location.origin}/book/${session.user.id}" width="100%" height="600" frameborder="0"></iframe>`
-                    : 'Loading...'}
+                  value={userSubdomain 
+                    ? `<iframe src="${buildSubdomainUrl(userSubdomain)}" width="100%" height="600" frameborder="0"></iframe>`
+                    : session?.user?.id 
+                      ? `<iframe src="${window.location.origin}/book/${session.user.id}" width="100%" height="600" frameborder="0"></iframe>`
+                      : 'Loading...'}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50"
                 />

@@ -53,6 +53,7 @@ model User {
   businessName  String?
   phone         String?
   timezone      String?   @default("UTC")
+  subdomain     String?   @unique // For custom booking URLs like user.schedulr.app
   
   // Relations
   appointments      Appointment[]
