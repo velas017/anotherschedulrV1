@@ -588,6 +588,7 @@ const SchedulingPageBuilder = () => {
                           serviceDuration={selectedService.duration}
                           onDateTimeSelect={handleDateTimeSelect}
                           selectedDateTime={selectedDateTime}
+                          previewDevice={previewDevice}
                         />
                       ) : (
                         <div className="text-center py-8">

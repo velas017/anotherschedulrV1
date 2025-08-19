@@ -32,13 +32,15 @@ interface CalendarProps {
   serviceDuration: number;
   onDateTimeSelect: (date: Date, time: string) => void;
   selectedDateTime?: {date: Date | null, time: string | null};
+  previewDevice?: 'desktop' | 'mobile';
 }
 
 const Calendar: React.FC<CalendarProps> = ({ 
   userId, 
   serviceDuration, 
   onDateTimeSelect,
-  selectedDateTime 
+  selectedDateTime,
+  previewDevice 
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -279,7 +281,13 @@ const Calendar: React.FC<CalendarProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid gap-6 ${
+        previewDevice === 'mobile' 
+          ? 'grid-cols-1' 
+          : previewDevice === 'desktop' 
+          ? 'grid-cols-2' 
+          : 'grid-cols-1 lg:grid-cols-2'
+      }`}>
         {/* Calendar Grid */}
         <div className="space-y-4">
           {/* Day Headers */}
@@ -327,61 +335,61 @@ const Calendar: React.FC<CalendarProps> = ({
 
         {/* Time Slots */}
         <div className="space-y-4">
-          {selectedDate ? (
-            <>
-              <h4 className="text-lg font-medium text-gray-900">Available Times</h4>
-              
-              {isLoadingSlots ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                </div>
-              ) : availableTimeSlots.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {availableTimeSlots
-                    .filter(slot => slot.available)
-                    .map((slot) => (
-                      <div key={slot.time} className="relative">
-                        <button
-                          onClick={() => handleTimeSlotClick(slot.time)}
-                          className={`
-                            w-full p-3 text-center border border-gray-200 rounded-lg font-medium transition-colors cursor-pointer
-                            ${pendingTimeSelection === slot.time 
-                              ? 'bg-black text-white' 
-                              : 'bg-white text-gray-900 hover:bg-gray-50'
-                            }
-                          `}
-                        >
-                          {formatTime(slot.time)}
-                        </button>
-                        
-                        {/* Select and Continue Dropdown - positioned below selected button */}
-                        {pendingTimeSelection === slot.time && (
-                          <div className="absolute z-50 top-full mt-2 left-1/2 transform -translate-x-1/2">
-                            <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-                              <button 
-                                onClick={handleSelectAndContinue}
-                                className="px-4 py-2 text-gray-900 hover:bg-gray-50 rounded-lg whitespace-nowrap cursor-pointer transition-colors"
-                              >
-                                Select and continue
-                              </button>
-                            </div>
+        {selectedDate ? (
+          <>
+            <h4 className="text-lg font-medium text-gray-900">Available Times</h4>
+            
+            {isLoadingSlots ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : availableTimeSlots.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {availableTimeSlots
+                  .filter(slot => slot.available)
+                  .map((slot) => (
+                    <div key={slot.time} className="relative">
+                      <button
+                        onClick={() => handleTimeSlotClick(slot.time)}
+                        className={`
+                          w-full p-3 text-center border border-gray-200 rounded-lg font-medium transition-colors cursor-pointer
+                          ${pendingTimeSelection === slot.time 
+                            ? 'bg-black text-white' 
+                            : 'bg-white text-gray-900 hover:bg-gray-50'
+                          }
+                        `}
+                      >
+                        {formatTime(slot.time)}
+                      </button>
+                      
+                      {/* Select and Continue Dropdown - positioned below selected button */}
+                      {pendingTimeSelection === slot.time && (
+                        <div className="absolute z-50 top-full mt-2 left-1/2 transform -translate-x-1/2">
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                            <button 
+                              onClick={handleSelectAndContinue}
+                              className="px-4 py-2 text-gray-900 hover:bg-gray-50 rounded-lg whitespace-nowrap cursor-pointer transition-colors"
+                            >
+                              Select and continue
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No available times for this date</p>
-                  <p className="text-sm text-gray-400 mt-1">Please select another date</p>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Select a date to view available times</p>
-            </div>
-          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No available times for this date</p>
+                <p className="text-sm text-gray-400 mt-1">Please select another date</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Select a date to view available times</p>
+          </div>
+        )}
         </div>
       </div>
     </div>
