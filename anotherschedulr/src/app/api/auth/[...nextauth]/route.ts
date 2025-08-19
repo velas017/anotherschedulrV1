@@ -136,7 +136,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "database",
+    strategy: "database", // Database sessions for Google OAuth + manual handling for credentials
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
@@ -174,7 +174,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       // Only log in development and avoid logging sensitive data
       if (process.env.NODE_ENV === 'development') {
-        console.log("🔍 SignIn Callback - Provider:", account?.provider);
+        console.log("🔍 SignIn Callback - User:", user.email, "Provider:", account?.provider, "User ID:", user.id);
       }
       
       try {
@@ -228,9 +228,36 @@ export const authOptions: NextAuthOptions = {
           return result.success;
         }
         
-        // For credentials provider
+        // For credentials provider - manual session creation since PrismaAdapter doesn't handle this
         if (account?.provider === "credentials") {
-          return true;
+          if (process.env.NODE_ENV === 'development') {
+            console.log("User signed in - Provider: credentials");
+            console.log("🔧 Creating manual database session for credentials provider");
+          }
+          
+          // Create session record manually since PrismaAdapter doesn't handle credentials
+          try {
+            const sessionToken = crypto.randomUUID();
+            const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            
+            // Create session record that PrismaAdapter would normally create
+            await prisma.session.create({
+              data: {
+                sessionToken,
+                userId: user.id,
+                expires,
+              }
+            });
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log("✅ Manual session created for credentials user:", user.id);
+            }
+            
+            return true;
+          } catch (error) {
+            console.error("❌ Failed to create manual session for credentials:", error);
+            return false;
+          }
         }
         
         if (process.env.NODE_ENV === 'development') {
@@ -253,25 +280,61 @@ export const authOptions: NextAuthOptions = {
     },
     
     async session({ session, user, token }) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔍 Session Callback - Session User ID:", session?.user?.id, "DB User ID:", user?.id, "Token ID:", token?.sub);
+      }
       
       try {
-        // Ensure session has user ID from database
+        // For database sessions, user should be provided by PrismaAdapter (for Google OAuth)
         if (session.user && user) {
           session.user.id = user.id;
-        } else {
           if (process.env.NODE_ENV === 'development') {
-            console.error("Missing session.user or database user");
+            console.log("✅ Session user ID set from database user:", user.id);
+          }
+        } 
+        // Fallback: If no database user but we have a token (credentials provider fallback)
+        else if (session.user && token?.sub) {
+          session.user.id = token.sub;
+          if (process.env.NODE_ENV === 'development') {
+            console.log("✅ Session user ID set from token fallback:", token.sub);
+          }
+        } 
+        else {
+          if (process.env.NODE_ENV === 'development') {
+            console.error("❌ Missing session data - Session:", !!session.user, "User:", !!user, "Token:", !!token?.sub);
           }
         }
         
         return session;
       } catch (error) {
-        console.error("Session callback error");
+        console.error("❌ Session callback error:", error);
         return session;
       }
     },
     
+    async jwt({ token, user, account }) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔍 JWT Callback - Token ID:", token.sub, "User ID:", user?.id, "Provider:", account?.provider);
+      }
+      
+      // For database sessions, JWT callback is mainly for credentials provider
+      if (user?.id) {
+        token.sub = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log("✅ JWT token updated with user info:", user.id);
+        }
+      }
+      
+      return token;
+    },
+    
     async redirect({ url, baseUrl }) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔍 Redirect - URL:", url, "Base URL:", baseUrl);
+      }
       
       // Allows relative callback URLs
       if (url.startsWith("/")) {

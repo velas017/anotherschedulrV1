@@ -246,7 +246,8 @@ async function seedMockData() {
     const clients = await Promise.all([
       prisma.client.create({
         data: {
-          name: 'Sarah Johnson (Mock)',
+          firstName: 'Sarah',
+          lastName: 'Johnson',
           email: 'sarah.mock@example.com',
           phone: '(555) 123-4567',
           notes: `Regular client, prefers morning appointments ${MOCK_DATA_TAG}`,
@@ -255,7 +256,8 @@ async function seedMockData() {
       }),
       prisma.client.create({
         data: {
-          name: 'Michael Chen (Mock)',
+          firstName: 'Michael',
+          lastName: 'Chen',
           email: 'michael.mock@example.com',
           phone: '(555) 234-5678',
           notes: `New client, working on productivity improvement ${MOCK_DATA_TAG}`,
@@ -264,7 +266,8 @@ async function seedMockData() {
       }),
       prisma.client.create({
         data: {
-          name: 'Emily Rodriguez (Mock)',
+          firstName: 'Emily',
+          lastName: 'Rodriguez',
           email: 'emily.mock@example.com',
           phone: '(555) 345-6789',
           notes: `VIP client, flexible with scheduling ${MOCK_DATA_TAG}`,
@@ -273,7 +276,8 @@ async function seedMockData() {
       }),
       prisma.client.create({
         data: {
-          name: 'David Thompson (Mock)',
+          firstName: 'David',
+          lastName: 'Thompson',
           email: 'david.mock@example.com',
           phone: '(555) 456-7890',
           notes: `Follow-up client, prefers afternoon slots ${MOCK_DATA_TAG}`,
@@ -282,7 +286,8 @@ async function seedMockData() {
       }),
       prisma.client.create({
         data: {
-          name: 'Lisa Williams (Mock)',
+          firstName: 'Lisa',
+          lastName: 'Williams',
           email: 'lisa.mock@example.com',
           phone: '(555) 567-8901',
           notes: `Workshop attendee, interested in group sessions ${MOCK_DATA_TAG}`,

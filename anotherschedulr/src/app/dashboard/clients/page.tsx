@@ -34,58 +34,47 @@ const ClientsPage = () => {
   const [showImportExport, setShowImportExport] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchResultsAnnouncement, setSearchResultsAnnouncement] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [clientsError, setClientsError] = useState<string | null>(null);
 
-  // Mock data for demonstration
-  const [clients] = useState<Client[]>([
-    {
-      id: "1",
-      lastName: "A",
-      firstName: "Chua",
-      phone: "(980) 253-7834",
-      email: "aa.chua@yahoo.com",
-      accountActive: false
-    },
-    {
-      id: "2",
-      lastName: "Alfaro",
-      firstName: "Allyson",
-      phone: "+17047269873",
-      email: "nahomii704@gmail.com",
-      accountActive: false
-    },
-    {
-      id: "3",
-      lastName: "Alvarenga",
-      firstName: "Krissia",
-      phone: "+17044216784",
-      email: "alvarengakrissia@gmail.com",
-      accountActive: false
-    },
-    {
-      id: "4",
-      lastName: "Amos",
-      firstName: "Torri",
-      phone: "+17022029905",
-      email: "Torriamos@gmail.com",
-      accountActive: false
-    },
-    {
-      id: "5",
-      lastName: "Antoine",
-      firstName: "Ashley",
-      phone: "+18609850909",
-      email: "ashtravel29@gmail.com",
-      accountActive: true
-    },
-    {
-      id: "6",
-      lastName: "Arana",
-      firstName: "Mafer",
-      phone: "+17044067040",
-      email: "maferarana3@gmail.com",
-      accountActive: false
+  // Fetch clients from API
+  useEffect(() => {
+    const fetchClients = async () => {
+      if (!session?.user?.id) return;
+      
+      setIsLoadingClients(true);
+      setClientsError(null);
+      try {
+        const response = await fetch('/api/clients');
+        if (!response.ok) {
+          throw new Error('Failed to fetch clients');
+        }
+        const data = await response.json();
+        
+        // Transform API data to match component's interface
+        const transformedClients = data.map((client: any) => ({
+          id: client.id,
+          firstName: client.firstName,
+          lastName: client.lastName,
+          email: client.email,
+          phone: client.phone || '',
+          accountActive: false // Default value for now
+        }));
+        
+        setClients(transformedClients);
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        setClientsError('Failed to load clients. Please try again.');
+      } finally {
+        setIsLoadingClients(false);
+      }
+    };
+    
+    if (session?.user?.id) {
+      fetchClients();
     }
-  ]);
+  }, [session]);
 
   // Debounce search term
   useEffect(() => {
@@ -331,74 +320,91 @@ const ClientsPage = () => {
 
         {/* Client Table */}
         <div className="flex-1 overflow-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                <th className="w-12 px-6 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedClients.length === clients.length && clients.length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  First Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Account
-                </th>
-                <th className="w-12 px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+          {isLoadingClients ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading clients...</span>
+            </div>
+          ) : clientsError ? (
+            <div className="text-center py-12">
+              <p className="text-red-600">{clientsError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="w-12 px-6 py-3">
                     <input
                       type="checkbox"
-                      checked={selectedClients.includes(client.id)}
-                      onChange={() => handleSelectClient(client.id)}
+                      checked={selectedClients.length === clients.length && clients.length > 0}
+                      onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.lastName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.firstName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.phone}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {client.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    {client.accountActive && (
-                      <Check className="w-5 h-5 text-green-600 mx-auto" />
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <MoreHorizontal className="w-5 h-5" />
-                    </button>
-                  </td>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Last Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    First Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account
+                  </th>
+                  <th className="w-12 px-6 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredClients.map((client) => (
+                  <tr key={client.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedClients.includes(client.id)}
+                        onChange={() => handleSelectClient(client.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {client.lastName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {client.firstName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {client.phone}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {client.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {client.accountActive && (
+                        <Check className="w-5 h-5 text-green-600 mx-auto" />
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
           
-          {filteredClients.length === 0 && (
+          {!isLoadingClients && !clientsError && filteredClients.length === 0 && (
             <div className="text-center py-12">
               <div className="max-w-md mx-auto">
                 <p className="text-gray-900 font-medium mb-2">No clients found</p>

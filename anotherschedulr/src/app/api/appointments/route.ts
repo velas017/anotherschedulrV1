@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
         client: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             phone: true
           }
@@ -215,7 +216,8 @@ export async function POST(request: NextRequest) {
         client: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             phone: true
           }

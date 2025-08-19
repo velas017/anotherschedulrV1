@@ -77,7 +77,8 @@ model VerificationToken {
 // Business models
 model Client {
   id           String   @id @default(cuid())
-  name         String
+  firstName    String
+  lastName     String
   email        String
   phone        String?
   notes        String?
