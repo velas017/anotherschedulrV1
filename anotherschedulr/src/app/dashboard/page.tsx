@@ -37,7 +37,8 @@ interface AppointmentDisplay {
   id: string;
   client: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     phone?: string;
   };
@@ -422,7 +423,7 @@ const DashboardPage = () => {
                             <UserCheck className="w-4 h-4 text-gray-600" />
                           </div>
                           <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{appointment.client?.name || 'Unknown Client'}</p>
+                            <p className="text-sm font-medium text-gray-900">{appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown Client'}</p>
                           </div>
                         </div>
                       </td>

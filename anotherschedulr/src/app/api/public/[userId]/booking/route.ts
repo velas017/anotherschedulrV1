@@ -9,7 +9,6 @@ interface BookingRequest {
   lastName: string;
   email: string;
   phone: string;
-  notes?: string;
 }
 
 export async function POST(
@@ -117,7 +116,8 @@ export async function POST(
       client = await prisma.client.create({
         data: {
           userId: userId,
-          name: `${body.firstName} ${body.lastName}`,
+          firstName: body.firstName,
+          lastName: body.lastName,
           email: body.email,
           phone: body.phone
         }
@@ -131,7 +131,7 @@ export async function POST(
         startTime: startTime,
         endTime: endTime,
         status: 'SCHEDULED',
-        notes: body.notes || '',
+        description: '',
         userId: userId,
         clientId: client.id,
         serviceId: service.id
@@ -153,11 +153,10 @@ export async function POST(
         duration: service.duration,
         price: service.price,
         client: {
-          name: client.name,
+          name: `${client.firstName} ${client.lastName}`,
           email: client.email,
           phone: client.phone
-        },
-        notes: appointment.notes
+        }
       }
     });
 

@@ -51,8 +51,7 @@ const PublicBookingPage = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    notes: ''
+    phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -236,8 +235,7 @@ const PublicBookingPage = () => {
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
           email: customerInfo.email,
-          phone: customerInfo.phone,
-          notes: customerInfo.notes
+          phone: customerInfo.phone
         })
       });
 
@@ -252,7 +250,7 @@ const PublicBookingPage = () => {
       alert(`Appointment booked successfully! Confirmation ID: ${data.appointment.id}`);
       
       // Reset form and go back to categories
-      setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+      setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '' });
       setSelectedDateTime({ date: null, time: null });
       setSelectedService(null);
       setSelectedCategoryData(null);

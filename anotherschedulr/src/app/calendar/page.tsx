@@ -48,7 +48,8 @@ interface Appointment {
   status: string;
   client: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     phone?: string;
   };
@@ -323,10 +324,10 @@ const CalendarPage = () => {
                      appointmentDate.getFullYear() === targetDate.getFullYear();
       
       // CRITICAL DEBUG: Log each appointment comparison for Saturday specifically
-      if (dayIndex === 6 || appointment.client?.name?.includes('Lisa Williams') || appointment.client?.name?.includes('Emily Rodriguez')) {
+      if (dayIndex === 6 || `${appointment.client?.firstName} ${appointment.client?.lastName}`.includes('Lisa Williams') || `${appointment.client?.firstName} ${appointment.client?.lastName}`.includes('Emily Rodriguez')) {
         console.log(`[CRITICAL DEBUG] Appointment date comparison for ${dayKey}:`, {
           appointmentId: appointment.id,
-          clientName: appointment.client?.name,
+          clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
           appointmentStartTime: appointment.startTime,
           appointmentDate: appointmentDate.toDateString(),
           appointmentDay: appointmentDate.getDate(),
@@ -354,7 +355,7 @@ const CalendarPage = () => {
         matchingAppointments: dayAppointments.length,
         appointmentDetails: dayAppointments.map(apt => ({
           id: apt.id,
-          clientName: apt.client?.name,
+          clientName: apt.client ? `${apt.client.firstName} ${apt.client.lastName}` : 'Unknown',
           startTime: apt.startTime,
           dayOfWeek: new Date(apt.startTime).getDay()
         }))
@@ -530,7 +531,7 @@ const CalendarPage = () => {
     if (!isValid) {
       console.warn('[BUSINESS HOURS VIOLATION] Appointment outside business hours:', {
         appointmentId: appointment.id,
-        clientName: appointment.client?.name,
+        clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
         startTime: appointment.startTime,
         dayOfWeek: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][startTime.getDay()]
       });
@@ -892,7 +893,7 @@ const CalendarPage = () => {
                           } else {
                             console.warn('[BLOCKED] Appointment outside business hours:', {
                               appointmentId: appointment.id,
-                              clientName: appointment.client?.name,
+                              clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
                               dayName,
                               startTime: appointment.startTime
                             });
@@ -900,7 +901,7 @@ const CalendarPage = () => {
                         } else {
                           console.error('[CRITICAL ERROR] Day mismatch detected and blocked:', {
                             appointmentId: appointment.id,
-                            clientName: appointment.client?.name,
+                            clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
                             appointmentDayOfWeek,
                             expectedDayIndex: dayIndex,
                             appointmentDay: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][appointmentDayOfWeek],
@@ -950,7 +951,7 @@ const CalendarPage = () => {
                       if (actualDayIndex === 6) {
                         console.error(`[CRITICAL BUG] APPOINTMENT INCORRECTLY POSITIONED IN SATURDAY COLUMN!`, {
                           appointmentId: appointment.id,
-                          clientName: appointment.client?.name,
+                          clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
                           startTime: appointment.startTime,
                           actualDayIndex,
                           leftCSS: leftPositionValue,
@@ -960,7 +961,7 @@ const CalendarPage = () => {
                       
                       console.log(`[POSITION DEBUG] Positioning appointment:`, {
                         appointmentId: appointment.id,
-                        clientName: appointment.client?.name,
+                        clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
                         actualDayIndex,
                         dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][actualDayIndex],
                         leftCSS: leftPositionValue
@@ -994,9 +995,9 @@ const CalendarPage = () => {
                                 className={`font-semibold leading-tight truncate ${
                                   isMobile ? 'text-sm' : 'text-xs'
                                 }`}
-                                title={`${appointment.client.name}: ${appointment.service?.name || appointment.title}`}
+                                title={`${appointment.client.firstName} ${appointment.client.lastName}: ${appointment.service?.name || appointment.title}`}
                               >
-                                {appointment.client.name}
+                                {appointment.client.firstName} {appointment.client.lastName}
                               </div>
                               <div 
                                 className={`leading-tight truncate text-gray-700 ${
@@ -1080,7 +1081,7 @@ const CalendarPage = () => {
                           if (isSameDay && !isValidBusinessHours) {
                             console.warn('[DAY VIEW] Blocking appointment outside business hours:', {
                               appointmentId: appointment.id,
-                              clientName: appointment.client?.name,
+                              clientName: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown',
                               startTime: appointment.startTime
                             });
                           }
@@ -1119,7 +1120,7 @@ const CalendarPage = () => {
                             >
                               <div className="font-medium text-gray-900 mb-1">
                                 {!isAppointmentInBusinessHours(appointment) && '⚠️ '}
-                                {appointment.client?.name}: {appointment.service?.name || appointment.title}
+                                {appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : 'Unknown Client'}: {appointment.service?.name || appointment.title}
                               </div>
                               <div className="text-gray-700 mb-1">
                                 {appointment.description || ''}

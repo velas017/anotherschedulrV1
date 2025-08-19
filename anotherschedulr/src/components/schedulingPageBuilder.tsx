@@ -60,8 +60,7 @@ const SchedulingPageBuilder = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    notes: ''
+    phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -263,23 +262,49 @@ const SchedulingPageBuilder = () => {
     setSubmissionError(null);
 
     try {
-      // In the preview mode, just show a mock success message
-      console.log('Preview mode booking:', {
-        serviceId: selectedService.id,
-        date: selectedDateTime.date.toISOString().split('T')[0],
-        time: selectedDateTime.time,
-        firstName: customerInfo.firstName,
-        lastName: customerInfo.lastName,
-        email: customerInfo.email,
-        phone: customerInfo.phone,
-        notes: customerInfo.notes
-      });
-      
-      // Show success message
-      alert('Preview booking submitted successfully! This is a preview mode.');
+      // Make actual booking API call for testing (if user session exists)
+      if (session?.user?.id) {
+        const response = await fetch(`/api/public/${session.user.id}/booking`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            serviceId: selectedService.id,
+            date: selectedDateTime.date.toISOString().split('T')[0],
+            time: selectedDateTime.time,
+            firstName: customerInfo.firstName,
+            lastName: customerInfo.lastName,
+            email: customerInfo.email,
+            phone: customerInfo.phone
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to book appointment');
+        }
+
+        // Show real booking success message
+        alert(`Real appointment booked successfully! Confirmation ID: ${data.appointment.id}\n\nThis appointment will appear in your calendar.`);
+      } else {
+        // Fallback to preview mode if no session
+        console.log('Preview mode booking (no session):', {
+          serviceId: selectedService.id,
+          date: selectedDateTime.date.toISOString().split('T')[0],
+          time: selectedDateTime.time,
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone
+        });
+        
+        alert('Preview booking (no real appointment created - please log in for real bookings)');
+      }
       
       // Reset form and go back to categories
-      setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+      setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '' });
       setSelectedDateTime({ date: null, time: null });
       setSelectedService(null);
       setSelectedCategoryData(null);
@@ -287,7 +312,7 @@ const SchedulingPageBuilder = () => {
       
     } catch (error) {
       console.error('Booking error:', error);
-      setSubmissionError('Failed to submit booking. Please try again.');
+      setSubmissionError(error instanceof Error ? error.message : 'Failed to submit booking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
