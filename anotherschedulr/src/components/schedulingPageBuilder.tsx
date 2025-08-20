@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { buildSubdomainUrl } from '@/lib/subdomain-utils';
+import { createColorVariants, validateHexColor } from '@/lib/color-utils';
 import { 
   ChevronLeft, 
   Monitor, 
@@ -12,7 +13,10 @@ import {
   Palette,
   Link,
   Plus,
-  Eye
+  Eye,
+  Save,
+  Check,
+  X
 } from 'lucide-react';
 import Calendar from '@/components/Calendar';
 import BookingInterface from '@/components/BookingInterface';
@@ -51,16 +55,25 @@ const SchedulingPageBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFontFamily, setSelectedFontFamily] = useState<string>('Inter');
   const [userSubdomain, setUserSubdomain] = useState<string | null>(null);
+  const [primaryColor, setPrimaryColor] = useState<string>('#000000');
+  const [secondaryColor, setSecondaryColor] = useState<string>('#6b7280');
+  const [isLoadingColors, setIsLoadingColors] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Booking success handler
   const handleBookingSuccess = (appointment: any) => {
     console.log('Booking successful in preview:', appointment);
   };
 
-  // Load font family from database first, fallback to localStorage
+  // Load all settings from database first, fallback to localStorage
   useEffect(() => {
-    const loadFontSettings = async () => {
+    const loadSettings = async () => {
       try {
+        setIsLoadingColors(true);
         // First try to load from database
         const response = await fetch('/api/scheduling-page/settings');
         if (response.ok) {
@@ -68,21 +81,27 @@ const SchedulingPageBuilder: React.FC = () => {
           if (settings.fontFamily) {
             setSelectedFontFamily(settings.fontFamily);
             localStorage.setItem('schedulingPageFontFamily', settings.fontFamily);
-            return;
+          }
+          if (settings.primaryColor) {
+            setPrimaryColor(settings.primaryColor);
+          }
+          if (settings.secondaryColor) {
+            setSecondaryColor(settings.secondaryColor);
           }
         }
       } catch (error) {
-        console.error('Error loading font settings from database:', error);
-      }
-      
-      // Fallback to localStorage
-      const savedFont = localStorage.getItem('schedulingPageFontFamily');
-      if (savedFont) {
-        setSelectedFontFamily(savedFont);
+        console.error('Error loading settings from database:', error);
+        // Fallback to localStorage for font only
+        const savedFont = localStorage.getItem('schedulingPageFontFamily');
+        if (savedFont) {
+          setSelectedFontFamily(savedFont);
+        }
+      } finally {
+        setIsLoadingColors(false);
       }
     };
 
-    loadFontSettings();
+    loadSettings();
   }, []);
 
   // Load user's subdomain
@@ -171,28 +190,123 @@ const SchedulingPageBuilder: React.FC = () => {
     }));
   };
 
-  const handleFontFamilyChange = async (font: string) => {
-    setSelectedFontFamily(font);
-    // Save to localStorage for immediate preview
-    localStorage.setItem('schedulingPageFontFamily', font);
-    
-    // Save to database for public page persistence
+  const saveSettings = async (settings: { fontFamily?: string; primaryColor?: string; secondaryColor?: string }) => {
     try {
+      console.log('Saving settings:', settings); // Debug log
       const response = await fetch('/api/scheduling-page/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fontFamily: font
-        })
+        body: JSON.stringify(settings)
       });
       
       if (!response.ok) {
-        console.error('Failed to save font family to database');
+        const errorText = await response.text();
+        console.error(`Failed to save settings - Status: ${response.status}, Response:`, errorText);
+        
+        // Show user-friendly error based on status
+        if (response.status === 401) {
+          console.error('Authentication error - please refresh the page and try again');
+        } else if (response.status === 500) {
+          console.error('Server error - please try again later');
+        }
+        return false;
       }
+      
+      const result = await response.json();
+      console.log('Settings saved successfully:', result);
+      return true;
+      
     } catch (error) {
-      console.error('Error saving font family:', error);
+      console.error('Network error saving settings:', error);
+      return false;
+    }
+  };
+
+  // Debounced save function
+  const debouncedSave = useCallback((settings: { fontFamily?: string; primaryColor?: string; secondaryColor?: string }) => {
+    // Clear any existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(async () => {
+      console.log('Debounced save triggered:', settings);
+      setSaveStatus('saving');
+      const success = await saveSettings(settings);
+      if (success) {
+        setHasUnsavedChanges(false);
+        setSaveStatus('success');
+        // Reset status after 2 seconds
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    }, 500); // Wait 500ms after last change
+  }, []);
+
+  const handleFontFamilyChange = (font: string) => {
+    setSelectedFontFamily(font);
+    // Save to localStorage for immediate preview
+    localStorage.setItem('schedulingPageFontFamily', font);
+    setHasUnsavedChanges(true);
+    
+    if (autoSaveEnabled) {
+      debouncedSave({ fontFamily: font });
+    }
+  };
+
+  const handlePrimaryColorChange = (color: string) => {
+    if (!validateHexColor(color)) {
+      console.warn('Invalid hex color format:', color);
+      return;
+    }
+    setPrimaryColor(color);
+    setHasUnsavedChanges(true);
+    
+    if (autoSaveEnabled) {
+      console.log('Queueing primary color save:', color);
+      debouncedSave({ primaryColor: color });
+    }
+  };
+
+  const handleSecondaryColorChange = (color: string) => {
+    if (!validateHexColor(color)) {
+      console.warn('Invalid hex color format:', color);
+      return;
+    }
+    setSecondaryColor(color);
+    setHasUnsavedChanges(true);
+    
+    if (autoSaveEnabled) {
+      console.log('Queueing secondary color save:', color);
+      debouncedSave({ secondaryColor: color });
+    }
+  };
+
+  // Manual save function
+  const handleManualSave = async () => {
+    setIsSaving(true);
+    setSaveStatus('saving');
+    
+    const success = await saveSettings({
+      primaryColor,
+      secondaryColor,
+      fontFamily: selectedFontFamily
+    });
+    
+    setIsSaving(false);
+    
+    if (success) {
+      setHasUnsavedChanges(false);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } else {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -247,25 +361,138 @@ const SchedulingPageBuilder: React.FC = () => {
 
           {activeTab === 'styles' && (
             <div className="space-y-4">
+              {/* Save Mode Toggle */}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Auto-save changes
+                  </label>
+                  <button
+                    onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                      autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      autoSaveEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {autoSaveEnabled 
+                    ? 'Changes will be saved automatically after you stop editing'
+                    : 'Click the save button to apply your changes'}
+                </p>
+              </div>
+
+              {/* Manual Save Button */}
+              {!autoSaveEnabled && hasUnsavedChanges && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleManualSave}
+                    disabled={isSaving}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                  {saveStatus === 'success' && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <Check className="w-4 h-4" />
+                      <span className="text-sm">Saved</span>
+                    </div>
+                  )}
+                  {saveStatus === 'error' && (
+                    <div className="flex items-center gap-1 text-red-600">
+                      <X className="w-4 h-4" />
+                      <span className="text-sm">Failed</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Auto-save Status Indicator */}
+              {autoSaveEnabled && saveStatus !== 'idle' && (
+                <div className="flex items-center gap-2 text-sm">
+                  {saveStatus === 'saving' && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <div className="w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </div>
+                  )}
+                  {saveStatus === 'success' && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <Check className="w-4 h-4" />
+                      <span>Changes saved</span>
+                    </div>
+                  )}
+                  {saveStatus === 'error' && (
+                    <div className="flex items-center gap-1 text-red-600">
+                      <X className="w-4 h-4" />
+                      <span>Failed to save</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Primary Color
                 </label>
-                <input
-                  type="color"
-                  defaultValue="#000000"
-                  className="w-full h-10 rounded border border-gray-300"
-                />
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => handlePrimaryColorChange(e.target.value)}
+                    className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                    disabled={isLoadingColors}
+                  />
+                  <input
+                    type="text"
+                    value={primaryColor}
+                    onChange={(e) => handlePrimaryColorChange(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded font-mono"
+                    placeholder="#000000"
+                    disabled={isLoadingColors}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Used for buttons, headings, and key elements
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Secondary Color
                 </label>
-                <input
-                  type="color"
-                  defaultValue="#6b7280"
-                  className="w-full h-10 rounded border border-gray-300"
-                />
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => handleSecondaryColorChange(e.target.value)}
+                    className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                    disabled={isLoadingColors}
+                  />
+                  <input
+                    type="text"
+                    value={secondaryColor}
+                    onChange={(e) => handleSecondaryColorChange(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded font-mono"
+                    placeholder="#6b7280"
+                    disabled={isLoadingColors}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Used for secondary text and subtle elements
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -403,7 +630,10 @@ const SchedulingPageBuilder: React.FC = () => {
         </div>
 
         {/* Preview Content */}
-        <div className="flex-1 bg-gray-100 p-8 overflow-auto">
+        <div 
+          className="flex-1 p-8 overflow-auto"
+          style={{ backgroundColor: secondaryColor }}
+        >
           <div 
             className={`mx-auto bg-white shadow-sm ${
               previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl'
@@ -417,8 +647,8 @@ const SchedulingPageBuilder: React.FC = () => {
                 mode="preview"
                 session={session}
                 config={{
-                  primaryColor: '#000000',
-                  secondaryColor: '#6b7280',
+                  primaryColor: primaryColor,
+                  secondaryColor: secondaryColor,
                   fontFamily: selectedFontFamily,
                   allowOnlineBooking: true
                 }}
@@ -434,7 +664,7 @@ const SchedulingPageBuilder: React.FC = () => {
               <div className="text-xs text-gray-500 mb-1">
                 Powered by
               </div>
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-sm font-medium" style={{ color: primaryColor }}>
                 another schedulr
               </div>
             </div>

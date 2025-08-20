@@ -157,7 +157,7 @@ const PublicBookingPage = () => {
 
   if (isResolving || (isLoading && actualUserId)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -168,7 +168,7 @@ const PublicBookingPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
         <div className="text-center">
           <p className="text-red-600">{error}</p>
         </div>
@@ -178,9 +178,10 @@ const PublicBookingPage = () => {
 
   return (
     <div 
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen"
       style={{ 
         fontFamily: config.fontFamily,
+        backgroundColor: config.secondaryColor,
         '--primary-color': config.primaryColor,
         '--secondary-color': config.secondaryColor
       } as React.CSSProperties}

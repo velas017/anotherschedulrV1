@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Session } from 'next-auth';
 import Calendar from '@/components/Calendar';
+import { createColorVariants } from '@/lib/color-utils';
 
 interface Service {
   id: string;
@@ -46,6 +47,7 @@ interface BookingInterfaceProps {
   isLoading?: boolean;
   onBookingSuccess?: (appointment: any) => void;
   className?: string;
+  applyBackground?: boolean;
 }
 
 const BookingInterface: React.FC<BookingInterfaceProps> = ({
@@ -57,7 +59,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
   categories,
   isLoading = false,
   onBookingSuccess,
-  className = ""
+  className = "",
+  applyBackground = false
 }) => {
   // State management for booking flow
   const [currentView, setCurrentView] = useState<'categories' | 'services' | 'calendar' | 'customerInfo'>('categories');
@@ -74,6 +77,11 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  
+  // Create color variants from the config
+  const colorVariants = useMemo(() => {
+    return createColorVariants(config.primaryColor, config.secondaryColor);
+  }, [config.primaryColor, config.secondaryColor]);
 
   const getVisibleCategories = () => {
     return categories.filter(category => 
@@ -281,14 +289,17 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
   const visibleCategories = getVisibleCategories();
 
   return (
-    <div className={className}>
+    <div 
+      className={className}
+      style={applyBackground ? { backgroundColor: config.secondaryColor } : undefined}
+    >
       {currentView === 'categories' && (
         <>
           {/* Category Selection Header */}
           <div className="mb-6">
             <div className="flex items-center space-x-2 mb-4">
               <span className="text-lg">📋</span>
-              <h2 className="text-lg font-semibold text-gray-900">Select Category</h2>
+              <h2 className="text-lg font-semibold" style={{ color: config.primaryColor }}>Select Category</h2>
             </div>
           </div>
 
@@ -306,15 +317,15 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      <h3 className="text-lg font-medium mb-1" style={{ color: config.primaryColor }}>
                         {category.name}
                       </h3>
                       {category.description && (
-                        <p className="text-gray-600 text-sm mb-2">
+                        <p className="text-sm mb-2" style={{ color: colorVariants.primaryLight }}>
                           {category.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs" style={{ color: colorVariants.primaryLight }}>
                         {category.services.filter(s => s.isVisible).length} services available
                       </p>
                     </div>
@@ -342,7 +353,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
               <button
                 onClick={handleShowAllAppointments}
                 className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity cursor-pointer"
-                style={{ color: config.secondaryColor }}
+                style={{ color: config.primaryColor }}
               >
                 SHOW ALL APPOINTMENTS
               </button>
@@ -371,7 +382,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
           {/* Category Name */}
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">
+            <h3 className="text-xl font-semibold" style={{ color: config.primaryColor }}>
               {selectedCategoryData.name}
             </h3>
           </div>
@@ -388,21 +399,22 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        <h4 className="text-lg font-semibold mb-1" style={{ color: config.primaryColor }}>
                           {service.name}
                         </h4>
-                        <p className="text-gray-600 mb-2">
+                        <p className="mb-2" style={{ color: colorVariants.primaryLight }}>
                           {formatServiceSummary(service.duration, service.price)}
                         </p>
                         {service.description && (
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-sm" style={{ color: colorVariants.primaryLight }}>
                             {service.description}
                           </p>
                         )}
                       </div>
                       <button
                         onClick={() => handleServiceSelect(service)}
-                        className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors ml-4 cursor-pointer"
+                        className="px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition-opacity ml-4 cursor-pointer"
+                        style={{ backgroundColor: config.primaryColor }}
                       >
                         SELECT
                       </button>
@@ -425,14 +437,14 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
           <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-lg font-semibold mb-1" style={{ color: config.primaryColor }}>
                   {selectedService.name}
                 </h3>
-                <p className="text-gray-600">
+                <p style={{ color: colorVariants.primaryLight }}>
                   {formatServiceSummary(selectedService.duration, selectedService.price)}
                 </p>
                 {selectedService.description && (
-                  <p className="text-gray-600 text-sm mt-2">
+                  <p className="text-sm mt-2" style={{ color: colorVariants.primaryLight }}>
                     {selectedService.description}
                   </p>
                 )}
@@ -462,8 +474,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             {/* Calendar Component */}
             <div className="border border-gray-200 rounded-lg p-6">
               <div className="mb-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">Select Date & Time</h4>
-                <p className="text-sm text-gray-500">Choose your preferred appointment date and time</p>
+                <h4 className="text-lg font-semibold mb-2" style={{ color: config.primaryColor }}>Select Date & Time</h4>
+                <p className="text-sm" style={{ color: colorVariants.primaryLight }}>Choose your preferred appointment date and time</p>
               </div>
               
               <Calendar
@@ -501,19 +513,19 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
               <h3 className="text-sm font-medium text-gray-600 mb-3">APPOINTMENT</h3>
               <div className="space-y-3">
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">
+                  <h4 className="text-lg font-semibold" style={{ color: config.primaryColor }}>
                     {selectedService.name}
                   </h4>
-                  <p className="text-gray-600">
+                  <p style={{ color: colorVariants.primaryLight }}>
                     {formatServiceDuration(selectedService.duration)} @ ${selectedService.price.toFixed(2)}
                   </p>
-                  <p className="text-gray-600 mt-2">
+                  <p className="mt-2" style={{ color: colorVariants.primaryLight }}>
                     {formatAppointmentDateTime(selectedDateTime.date, selectedDateTime.time)}
                   </p>
                 </div>
                 {selectedService.description && (
                   <div className="pt-3 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm" style={{ color: colorVariants.primaryLight }}>
                       {selectedService.description}
                     </p>
                   </div>
@@ -608,7 +620,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 <button
                   onClick={handleSubmitBooking}
                   disabled={isSubmitting}
-                  className="w-full px-6 py-4 bg-black text-white rounded-lg font-medium text-sm uppercase tracking-wide hover:bg-gray-800 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-4 text-white rounded-lg font-medium text-sm uppercase tracking-wide hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: config.primaryColor }}
                 >
                   {isSubmitting ? 'BOOKING...' : 'BOOK APPOINTMENT'}
                 </button>
