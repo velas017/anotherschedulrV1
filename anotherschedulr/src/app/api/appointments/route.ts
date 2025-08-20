@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const validation = validateQueryParams(searchParams, dateRangeSchema);
     
+    // Log validation failure for debugging
+    if (!validation.success) {
+      console.error('Date parameter validation failed:', validation.error);
+      console.error('Received parameters:', Object.fromEntries(searchParams.entries()));
+    }
+    
     const whereClause: Record<string, unknown> = {
       userId: session.user.id,
     };

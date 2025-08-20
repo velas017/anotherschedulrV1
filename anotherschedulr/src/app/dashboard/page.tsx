@@ -133,6 +133,9 @@ const DashboardPage = () => {
     }
   };
 
+  // OLD FUNCTIONS - KEPT FOR REFERENCE BUT NO LONGER USED
+  // These individual fetch functions have been replaced by the consolidated /api/dashboard/summary endpoint
+  
   // Fetch today's appointments count
   const fetchTodayAppointments = useCallback(async () => {
     try {
@@ -158,7 +161,9 @@ const DashboardPage = () => {
       const response = await fetch(`/api/appointments?startDate=${startDate}&endDate=${endDate}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch appointments');
+        const errorText = await response.text();
+        console.error(`API Error (${response.status}):`, errorText);
+        throw new Error(`Failed to fetch appointments: ${response.status} ${response.statusText}`);
       }
       
       const appointments = await response.json();
@@ -176,7 +181,9 @@ const DashboardPage = () => {
       const response = await fetch(`/api/appointments?startDate=${startDate}&endDate=${endDate}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch weekly appointments');
+        const errorText = await response.text();
+        console.error(`Weekly API Error (${response.status}):`, errorText);
+        throw new Error(`Failed to fetch weekly appointments: ${response.status} ${response.statusText}`);
       }
       
       const appointments = await response.json();
@@ -205,7 +212,7 @@ const DashboardPage = () => {
     }
   }, []);
 
-  // Load dashboard data function
+  // Load dashboard data function - NEW OPTIMIZED VERSION
   const loadDashboardData = useCallback(async () => {
     if (status === 'loading') return;
     if (!session?.user) {
@@ -217,28 +224,31 @@ const DashboardPage = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch all dashboard data in parallel
-      const [todayCount, currentMonthAppointmentsCount, currentWeekAppointmentsCount, todayAppointments] = await Promise.all([
-        fetchTodayAppointments(),
-        fetchCurrentMonthAppointments(),
-        fetchCurrentWeekAppointments(),
-        fetchTodayAppointmentsList()
-      ]);
+      // Single API call to fetch all dashboard data
+      const response = await fetch('/api/dashboard/summary');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Dashboard API Error (${response.status}):`, errorText);
+        throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
 
       setStats({
-        todayAppointments: todayCount,
-        currentMonthAppointments: currentMonthAppointmentsCount,
-        upcomingThisWeek: currentWeekAppointmentsCount,
+        todayAppointments: data.stats.todayAppointments,
+        currentMonthAppointments: data.stats.currentMonthAppointments,
+        upcomingThisWeek: data.stats.currentWeekAppointments,
       });
-      setTodayAppointmentsList(todayAppointments);
-      setLastUpdated(new Date());
+      setTodayAppointmentsList(data.todayAppointmentsList);
+      setLastUpdated(new Date(data.timestamp));
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  }, [status, session?.user, fetchTodayAppointments, fetchCurrentMonthAppointments, fetchCurrentWeekAppointments, fetchTodayAppointmentsList]);
+  }, [status, session?.user]);
 
   // Initial data load
   useEffect(() => {

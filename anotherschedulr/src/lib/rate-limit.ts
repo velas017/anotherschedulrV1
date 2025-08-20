@@ -54,7 +54,7 @@ class RateLimiter {
 // Different rate limiters for different endpoints
 export const apiRateLimiter = new RateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  maxRequests: 60, // 60 requests per minute
+  maxRequests: 100, // 100 requests per minute (increased from 60 to handle dashboard's multiple API calls)
 });
 
 export const authRateLimiter = new RateLimiter({

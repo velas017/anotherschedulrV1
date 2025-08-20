@@ -164,8 +164,12 @@ export const idParamSchema = z.object({
 
 // Date range validation
 export const dateRangeSchema = z.object({
-  startDate: z.string().datetime('Invalid start date').optional(),
-  endDate: z.string().datetime('Invalid end date').optional(),
+  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid start date format'
+  }).optional(),
+  endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid end date format'
+  }).optional(),
 });
 
 // Helper function to validate request body
