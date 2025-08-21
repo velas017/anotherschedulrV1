@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboardLayout';
+import Link from 'next/link';
 import { 
   Plus, 
   ChevronDown, 
   ChevronRight,
+  ChevronLeft,
   Edit,
   Copy,
   HelpCircle,
@@ -306,45 +307,45 @@ const AppointmentTypesPage = () => {
   };
 
   return (
-    <DashboardLayout
-      title="Appointment Types"
-      subtitle="Manage your services and appointment types"
-      rightContent={
-        <HelpCircle className="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-pointer" />
-      }
-    >
-      <div className="flex h-full">
-        {/* Sidebar Navigation */}
-        <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Appointment Types</h2>
+    <div className="flex h-screen bg-gray-50">
+      {/* Left Sidebar - Match Client Page */}
+      <aside className="w-64 bg-white border-r border-gray-200">
+        <div className="p-6">
+          <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-gray-900 mb-8">
+            <ChevronLeft className="w-5 h-5 mr-1" />
+            <span className="text-sm font-medium">BACK</span>
+          </Link>
+
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900">Appointment Types</h2>
+            
             <nav className="space-y-1">
               <button
                 onClick={() => setActiveTab('types')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === 'types'
                     ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 Types
               </button>
               <button
                 onClick={() => setActiveTab('addons')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === 'addons'
                     ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 Add-ons
               </button>
               <button
                 onClick={() => setActiveTab('coupons')}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === 'coupons'
                     ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 Coupons
@@ -352,33 +353,33 @@ const AppointmentTypesPage = () => {
             </nav>
           </div>
         </div>
+      </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col bg-gray-50">
-          {/* Action Bar */}
-          {activeTab === 'types' && services.length > 0 && (
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
-              <button
-                onClick={() => router.push('/dashboard/appointment-types/new')}
-                className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
-              >
-                NEW TYPE OF SERVICE
-              </button>
-            </div>
-          )}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col bg-gray-50">
+        {/* Action Bar */}
+        {activeTab === 'types' && services.length > 0 && (
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <button
+              onClick={() => router.push('/dashboard/appointment-types/new')}
+              className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
+            >
+              NEW TYPE OF SERVICE
+            </button>
+          </div>
+        )}
 
-          {/* Content */}
-          {isLoading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading services...</p>
-              </div>
+        {/* Content */}
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading services...</p>
             </div>
-          ) : (
-            renderContent()
-          )}
-        </div>
+          </div>
+        ) : (
+          renderContent()
+        )}
       </div>
 
       {/* New Service Modal */}
@@ -398,7 +399,7 @@ const AppointmentTypesPage = () => {
           }}
         />
       )}
-    </DashboardLayout>
+    </div>
   );
 };
 
