@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
       },
       update: {
         ...(fontFamily && { fontFamily }),
-        ...(primaryColor && { primaryColor }),
-        ...(secondaryColor && { secondaryColor }),
+        ...(primaryColor !== undefined && { primaryColor }),
+        ...(secondaryColor !== undefined && { secondaryColor }),
         ...(welcomeMessage !== undefined && { welcomeMessage }),
         ...(allowOnlineBooking !== undefined && { allowOnlineBooking })
       }

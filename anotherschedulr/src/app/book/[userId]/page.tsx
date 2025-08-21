@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import BookingInterface from '@/components/BookingInterface';
+import { createColorVariants, lightenColor } from '@/lib/color-utils';
 
 interface Service {
   id: string;
@@ -48,6 +49,11 @@ const PublicBookingPage = () => {
     fontFamily: 'Inter',
     allowOnlineBooking: true
   });
+
+  // Create color variants for theming
+  const colorVariants = useMemo(() => {
+    return createColorVariants(config.primaryColor, config.secondaryColor);
+  }, [config.primaryColor, config.secondaryColor]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,7 +163,7 @@ const PublicBookingPage = () => {
 
   if (isResolving || (isLoading && actualUserId)) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -168,7 +174,7 @@ const PublicBookingPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f3f4f6' }}>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">{error}</p>
         </div>
@@ -178,10 +184,9 @@ const PublicBookingPage = () => {
 
   return (
     <div 
-      className="min-h-screen"
+      className="min-h-screen bg-gray-50"
       style={{ 
         fontFamily: config.fontFamily,
-        backgroundColor: config.secondaryColor,
         '--primary-color': config.primaryColor,
         '--secondary-color': config.secondaryColor
       } as React.CSSProperties}
@@ -207,7 +212,10 @@ const PublicBookingPage = () => {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
+        <div 
+          className="rounded-lg shadow-sm"
+          style={{ backgroundColor: colorVariants.secondaryLight || lightenColor(config.secondaryColor, 70) }}
+        >
           {/* Welcome Message */}
           {config.welcomeMessage && (
             <div className="p-6 border-b border-gray-200">

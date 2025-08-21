@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { buildSubdomainUrl } from '@/lib/subdomain-utils';
-import { createColorVariants, validateHexColor } from '@/lib/color-utils';
+import { createColorVariants, validateHexColor, lightenColor } from '@/lib/color-utils';
 import { 
   ChevronLeft, 
   Monitor, 
@@ -63,6 +63,11 @@ const SchedulingPageBuilder: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Create color variants for theming
+  const colorVariants = useMemo(() => {
+    return createColorVariants(primaryColor, secondaryColor);
+  }, [primaryColor, secondaryColor]);
   
   // Booking success handler
   const handleBookingSuccess = (appointment: any) => {
@@ -630,15 +635,15 @@ const SchedulingPageBuilder: React.FC = () => {
         </div>
 
         {/* Preview Content */}
-        <div 
-          className="flex-1 p-8 overflow-auto"
-          style={{ backgroundColor: secondaryColor }}
-        >
+        <div className="flex-1 bg-gray-100 p-8 overflow-auto">
           <div 
-            className={`mx-auto bg-white shadow-sm ${
+            className={`mx-auto shadow-sm ${
               previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl'
             }`}
-            style={{ fontFamily: selectedFontFamily }}
+            style={{ 
+              fontFamily: selectedFontFamily,
+              backgroundColor: colorVariants.secondaryLight || lightenColor(secondaryColor, 70)
+            }}
           >
             {/* BookingInterface Component */}
             <div className="p-6">
