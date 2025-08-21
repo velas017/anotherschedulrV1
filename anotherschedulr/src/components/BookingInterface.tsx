@@ -307,7 +307,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
           <div className="space-y-4 mb-8">
             {isLoading ? (
               <div className="text-center py-8">
-                <div className="text-sm text-gray-500">Loading services...</div>
+                <div className="text-sm" style={{ color: config.primaryColor }}>Loading services...</div>
               </div>
             ) : visibleCategories.length > 0 ? (
               visibleCategories.map((category) => (
@@ -321,11 +321,11 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                         {category.name}
                       </h3>
                       {category.description && (
-                        <p className="text-sm mb-2" style={{ color: colorVariants.primaryLight }}>
+                        <p className="text-sm mb-2" style={{ color: config.primaryColor }}>
                           {category.description}
                         </p>
                       )}
-                      <p className="text-xs" style={{ color: colorVariants.primaryLight }}>
+                      <p className="text-xs" style={{ color: config.primaryColor }}>
                         {category.services.filter(s => s.isVisible).length} services available
                       </p>
                     </div>
@@ -341,8 +341,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
               ))
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500 mb-4">No services are currently available for booking.</p>
-                <p className="text-sm text-gray-400">Please check back later.</p>
+                <p className="mb-4" style={{ color: config.primaryColor }}>No services are currently available for booking.</p>
+                <p className="text-sm" style={{ color: config.primaryColor, opacity: 0.8 }}>Please check back later.</p>
               </div>
             )}
           </div>
@@ -369,14 +369,15 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
           <div className="mb-6">
             <button
               onClick={handleBackToCategories}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+              className="flex items-center transition-colors mb-4 cursor-pointer hover:opacity-70"
+              style={{ color: config.primaryColor }}
             >
               <ChevronLeft className="w-5 h-5 mr-1" />
               <span className="text-sm font-medium">SELECT CATEGORY</span>
             </button>
             
             <div className="text-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Select Appointment</h2>
+              <h2 className="text-lg font-semibold" style={{ color: config.primaryColor }}>Select Appointment</h2>
             </div>
           </div>
 
@@ -402,11 +403,11 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                         <h4 className="text-lg font-semibold mb-1" style={{ color: config.primaryColor }}>
                           {service.name}
                         </h4>
-                        <p className="mb-2" style={{ color: colorVariants.primaryLight }}>
+                        <p className="mb-2" style={{ color: config.primaryColor }}>
                           {formatServiceSummary(service.duration, service.price)}
                         </p>
                         {service.description && (
-                          <p className="text-sm" style={{ color: colorVariants.primaryLight }}>
+                          <p className="text-sm" style={{ color: config.primaryColor }}>
                             {service.description}
                           </p>
                         )}
@@ -423,7 +424,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 ))
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No services available in this category.</p>
+                <p style={{ color: config.primaryColor }}>No services available in this category.</p>
               </div>
             )}
           </div>
@@ -440,18 +441,19 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 <h3 className="text-lg font-semibold mb-1" style={{ color: config.primaryColor }}>
                   {selectedService.name}
                 </h3>
-                <p style={{ color: colorVariants.primaryLight }}>
+                <p style={{ color: config.primaryColor }}>
                   {formatServiceSummary(selectedService.duration, selectedService.price)}
                 </p>
                 {selectedService.description && (
-                  <p className="text-sm mt-2" style={{ color: colorVariants.primaryLight }}>
+                  <p className="text-sm mt-2" style={{ color: config.primaryColor }}>
                     {selectedService.description}
                   </p>
                 )}
               </div>
               <button
                 onClick={handleBackToServices}
-                className="text-gray-500 hover:text-gray-700 cursor-pointer"
+                className="cursor-pointer hover:opacity-70"
+                style={{ color: config.primaryColor }}
               >
                 ✕
               </button>
@@ -464,7 +466,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             <div className="mb-6">
               <button
                 onClick={handleBackToServices}
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4 cursor-pointer"
+                className="flex items-center transition-colors mb-4 cursor-pointer hover:opacity-70"
+                style={{ color: config.primaryColor }}
               >
                 <ChevronLeft className="w-5 h-5 mr-1" />
                 <span className="text-sm font-medium">SELECT SERVICE</span>
@@ -475,7 +478,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             <div className="border border-gray-200 rounded-lg p-6">
               <div className="mb-6">
                 <h4 className="text-lg font-semibold mb-2" style={{ color: config.primaryColor }}>Select Date & Time</h4>
-                <p className="text-sm" style={{ color: colorVariants.primaryLight }}>Choose your preferred appointment date and time</p>
+                <p className="text-sm" style={{ color: config.primaryColor }}>Choose your preferred appointment date and time</p>
               </div>
               
               <Calendar
@@ -484,6 +487,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 onDateTimeSelect={handleDateTimeSelect}
                 selectedDateTime={selectedDateTime}
                 previewDevice={previewDevice}
+                primaryColor={config.primaryColor}
               />
             </div>
           </div>
@@ -497,7 +501,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
           <div className="mb-6">
             <button
               onClick={handleBackToCalendar}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+              className="flex items-center transition-colors cursor-pointer hover:opacity-70"
+              style={{ color: config.primaryColor }}
             >
               <ChevronLeft className="w-5 h-5 mr-1" />
               <span className="text-sm font-medium">DATE & TIME</span>
@@ -506,26 +511,26 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
           {/* Appointment Summary */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Information</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: config.primaryColor }}>Your Information</h2>
             
             {/* Appointment Details Bubble */}
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="text-sm font-medium text-gray-600 mb-3">APPOINTMENT</h3>
+              <h3 className="text-sm font-medium mb-3" style={{ color: config.primaryColor }}>APPOINTMENT</h3>
               <div className="space-y-3">
                 <div>
                   <h4 className="text-lg font-semibold" style={{ color: config.primaryColor }}>
                     {selectedService.name}
                   </h4>
-                  <p style={{ color: colorVariants.primaryLight }}>
+                  <p style={{ color: config.primaryColor }}>
                     {formatServiceDuration(selectedService.duration)} @ ${selectedService.price.toFixed(2)}
                   </p>
-                  <p className="mt-2" style={{ color: colorVariants.primaryLight }}>
+                  <p className="mt-2" style={{ color: config.primaryColor }}>
                     {formatAppointmentDateTime(selectedDateTime.date, selectedDateTime.time)}
                   </p>
                 </div>
                 {selectedService.description && (
                   <div className="pt-3 border-t border-gray-200">
-                    <p className="text-sm" style={{ color: colorVariants.primaryLight }}>
+                    <p className="text-sm" style={{ color: config.primaryColor }}>
                       {selectedService.description}
                     </p>
                   </div>
@@ -535,11 +540,11 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
             {/* Customer Information Form */}
             <div className="space-y-8">
-              <h3 className="text-sm font-medium text-gray-600 tracking-wide">YOUR INFORMATION</h3>
+              <h3 className="text-sm font-medium tracking-wide" style={{ color: config.primaryColor }}>YOUR INFORMATION</h3>
               
               {/* First Name */}
               <div className="space-y-2">
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
+                <label htmlFor="firstName" className="block text-sm font-medium mb-1 uppercase tracking-wide" style={{ color: config.primaryColor }}>
                   FIRST NAME<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -554,7 +559,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
               {/* Last Name */}
               <div className="space-y-2">
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
+                <label htmlFor="lastName" className="block text-sm font-medium mb-1 uppercase tracking-wide" style={{ color: config.primaryColor }}>
                   LAST NAME<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -569,13 +574,13 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
               {/* Phone */}
               <div className="space-y-2">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
+                <label htmlFor="phone" className="block text-sm font-medium mb-1 uppercase tracking-wide" style={{ color: config.primaryColor }}>
                   PHONE<span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">
                     <span className="text-lg">🇺🇸</span>
-                    <span className="text-gray-600 text-sm">+1</span>
+                    <span className="text-sm" style={{ color: config.primaryColor }}>+1</span>
                   </div>
                   <input
                     type="tel"
@@ -591,7 +596,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
               {/* Email */}
               <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide text-gray-900">
+                <label htmlFor="email" className="block text-sm font-medium mb-1 uppercase tracking-wide" style={{ color: config.primaryColor }}>
                   EMAIL<span className="text-red-500">*</span>
                 </label>
                 <input
@@ -603,7 +608,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs mt-1" style={{ color: config.primaryColor, opacity: 0.8 }}>
                   Use a comma or press enter/return to add additional email addresses
                 </p>
               </div>

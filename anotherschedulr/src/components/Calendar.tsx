@@ -33,6 +33,7 @@ interface CalendarProps {
   onDateTimeSelect: (date: Date, time: string) => void;
   selectedDateTime?: {date: Date | null, time: string | null};
   previewDevice?: 'desktop' | 'mobile';
+  primaryColor?: string;
 }
 
 const Calendar: React.FC<CalendarProps> = ({ 
@@ -40,7 +41,8 @@ const Calendar: React.FC<CalendarProps> = ({
   serviceDuration, 
   onDateTimeSelect,
   selectedDateTime,
-  previewDevice 
+  previewDevice,
+  primaryColor = '#000000' 
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -237,8 +239,8 @@ const Calendar: React.FC<CalendarProps> = ({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          <p className="ml-3 text-gray-500">Loading calendar...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderBottomColor: primaryColor }}></div>
+          <p className="ml-3" style={{ color: primaryColor }}>Loading calendar...</p>
         </div>
       </div>
     );
@@ -252,10 +254,10 @@ const Calendar: React.FC<CalendarProps> = ({
           onClick={() => navigateMonth('prev')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
+          <ChevronLeft className="w-5 h-5" style={{ color: primaryColor }} />
         </button>
         
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold" style={{ color: primaryColor }}>
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
         </h3>
         
@@ -263,21 +265,21 @@ const Calendar: React.FC<CalendarProps> = ({
           onClick={() => navigateMonth('next')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
         >
-          <ChevronRight className="w-5 h-5 text-gray-600" />
+          <ChevronRight className="w-5 h-5" style={{ color: primaryColor }} />
         </button>
       </div>
 
       {/* Selected Date Display */}
       {selectedDate && (
         <div className="text-center mb-4">
-          <h4 className="text-lg font-medium text-gray-900">
+          <h4 className="text-lg font-medium" style={{ color: primaryColor }}>
             {selectedDate.toLocaleDateString('en-US', { 
               weekday: 'long', 
               month: 'long', 
               day: 'numeric' 
             })}
           </h4>
-          <p className="text-sm text-gray-500 mt-1">TIME ZONE: {timezone}</p>
+          <p className="text-sm mt-1" style={{ color: primaryColor, opacity: 0.7 }}>TIME ZONE: {timezone}</p>
         </div>
       )}
 
@@ -293,7 +295,7 @@ const Calendar: React.FC<CalendarProps> = ({
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {dayNames.map((day, index) => (
-              <div key={index} className="text-center text-sm font-medium text-gray-500 py-2">
+              <div key={index} className="text-center text-sm font-medium py-2" style={{ color: primaryColor, opacity: 0.7 }}>
                 {day}
               </div>
             ))}
@@ -310,18 +312,27 @@ const Calendar: React.FC<CalendarProps> = ({
                     className={`
                       w-full h-full rounded-lg text-sm font-medium transition-colors
                       ${isPastDate(day) || isClosedDate(day)
-                        ? 'text-gray-300 cursor-not-allowed' 
-                        : 'text-gray-900 hover:bg-gray-100 cursor-pointer'
+                        ? 'cursor-not-allowed opacity-30' 
+                        : 'hover:bg-gray-100 cursor-pointer'
                       }
                       ${isToday(day) && !isPastDate(day) && !isClosedDate(day)
-                        ? 'bg-black text-white hover:bg-gray-800' 
+                        ? 'text-white hover:opacity-90' 
                         : ''
                       }
                       ${isSelectedDate(day) && !isToday(day) && !isPastDate(day) && !isClosedDate(day)
-                        ? 'bg-blue-100 text-blue-900 border-2 border-blue-500'
+                        ? 'border-2'
                         : ''
                       }
                     `}
+                    style={{
+                      color: (isPastDate(day) || isClosedDate(day)) ? '#ccc' : 
+                             (isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? 'white' : 
+                             primaryColor,
+                      backgroundColor: (isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? primaryColor : 
+                                      (isSelectedDate(day) && !isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? `${primaryColor}20` : 
+                                      'transparent',
+                      borderColor: (isSelectedDate(day) && !isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? primaryColor : 'transparent'
+                    }}
                   >
                     {day}
                   </button>
@@ -337,11 +348,11 @@ const Calendar: React.FC<CalendarProps> = ({
         <div className="space-y-4">
         {selectedDate ? (
           <>
-            <h4 className="text-lg font-medium text-gray-900">Available Times</h4>
+            <h4 className="text-lg font-medium" style={{ color: primaryColor }}>Available Times</h4>
             
             {isLoadingSlots ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderBottomColor: primaryColor }}></div>
               </div>
             ) : availableTimeSlots.length > 0 ? (
               <div className="grid grid-cols-2 gap-3">
@@ -354,10 +365,15 @@ const Calendar: React.FC<CalendarProps> = ({
                         className={`
                           w-full p-3 text-center border border-gray-200 rounded-lg font-medium transition-colors cursor-pointer
                           ${pendingTimeSelection === slot.time 
-                            ? 'bg-black text-white' 
-                            : 'bg-white text-gray-900 hover:bg-gray-50'
+                            ? 'text-white' 
+                            : 'bg-white hover:bg-gray-50'
                           }
                         `}
+                        style={{
+                          backgroundColor: pendingTimeSelection === slot.time ? primaryColor : 'white',
+                          color: pendingTimeSelection === slot.time ? 'white' : primaryColor,
+                          borderColor: pendingTimeSelection === slot.time ? primaryColor : '#e5e7eb'
+                        }}
                       >
                         {formatTime(slot.time)}
                       </button>
@@ -368,7 +384,8 @@ const Calendar: React.FC<CalendarProps> = ({
                           <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                             <button 
                               onClick={handleSelectAndContinue}
-                              className="px-4 py-2 text-gray-900 hover:bg-gray-50 rounded-lg whitespace-nowrap cursor-pointer transition-colors"
+                              className="px-4 py-2 hover:bg-gray-50 rounded-lg whitespace-nowrap cursor-pointer transition-colors"
+                              style={{ color: primaryColor }}
                             >
                               Select and continue
                             </button>
@@ -380,14 +397,14 @@ const Calendar: React.FC<CalendarProps> = ({
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No available times for this date</p>
-                <p className="text-sm text-gray-400 mt-1">Please select another date</p>
+                <p style={{ color: primaryColor }}>No available times for this date</p>
+                <p className="text-sm mt-1" style={{ color: primaryColor, opacity: 0.7 }}>Please select another date</p>
               </div>
             )}
           </>
         ) : (
           <div className="text-center py-8">
-            <p className="text-gray-500">Select a date to view available times</p>
+            <p style={{ color: primaryColor }}>Select a date to view available times</p>
           </div>
         )}
         </div>
