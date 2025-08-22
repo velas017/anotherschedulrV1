@@ -313,7 +313,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
               visibleCategories.map((category) => (
                 <div 
                   key={category.id} 
-                  className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                  className="border rounded-lg p-6 transition-all hover:opacity-80"
+                  style={{ borderColor: config.primaryColor }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -349,7 +350,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
 
           {/* Show All Appointments Link */}
           {config.allowOnlineBooking && (
-            <div className="text-center border-t border-gray-200 pt-6">
+            <div className="text-center border-t pt-6" style={{ borderTopColor: config.primaryColor }}>
               <button
                 onClick={handleShowAllAppointments}
                 className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity cursor-pointer"
@@ -396,7 +397,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                 .map((service) => (
                   <div 
                     key={service.id}
-                    className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors"
+                    className="border rounded-lg p-6 transition-all hover:opacity-80"
+                    style={{ borderColor: config.primaryColor }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -435,7 +437,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
         <>
           {/* Calendar View */}
           {/* Service Summary Section */}
-          <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-6 p-6 bg-gray-50 rounded-lg border" style={{ borderColor: config.primaryColor }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-1" style={{ color: config.primaryColor }}>
@@ -475,7 +477,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             </div>
 
             {/* Calendar Component */}
-            <div className="border border-gray-200 rounded-lg p-6">
+            <div className="border rounded-lg p-6" style={{ borderColor: config.primaryColor }}>
               <div className="mb-6">
                 <h4 className="text-lg font-semibold mb-2" style={{ color: config.primaryColor }}>Select Date & Time</h4>
                 <p className="text-sm" style={{ color: config.primaryColor }}>Choose your preferred appointment date and time</p>
@@ -514,7 +516,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
             <h2 className="text-lg font-semibold mb-4" style={{ color: config.primaryColor }}>Your Information</h2>
             
             {/* Appointment Details Bubble */}
-            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border" style={{ borderColor: config.primaryColor }}>
               <h3 className="text-sm font-medium mb-3" style={{ color: config.primaryColor }}>APPOINTMENT</h3>
               <div className="space-y-3">
                 <div>
@@ -529,7 +531,7 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   </p>
                 </div>
                 {selectedService.description && (
-                  <div className="pt-3 border-t border-gray-200">
+                  <div className="pt-3 border-t" style={{ borderTopColor: config.primaryColor }}>
                     <p className="text-sm" style={{ color: config.primaryColor }}>
                       {selectedService.description}
                     </p>
@@ -552,7 +554,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="firstName"
                   value={customerInfo.firstName}
                   onChange={(e) => setCustomerInfo({...customerInfo, firstName: e.target.value})}
-                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b focus:outline-none focus:ring-0"
+                  style={{ borderBottomColor: customerInfo.firstName ? config.primaryColor : `${config.primaryColor}80` }}
                   required
                 />
               </div>
@@ -567,7 +570,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   id="lastName"
                   value={customerInfo.lastName}
                   onChange={(e) => setCustomerInfo({...customerInfo, lastName: e.target.value})}
-                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b focus:outline-none focus:ring-0"
+                  style={{ borderBottomColor: customerInfo.lastName ? config.primaryColor : `${config.primaryColor}80` }}
                   required
                 />
               </div>
@@ -588,7 +592,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
                     placeholder="1111111111"
-                    className="flex-1 px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                    className="flex-1 px-0 py-3 text-gray-900 bg-transparent border-0 border-b focus:outline-none focus:ring-0 placeholder-gray-400"
+                    style={{ borderBottomColor: customerInfo.phone ? config.primaryColor : `${config.primaryColor}80` }}
                     required
                   />
                 </div>
@@ -605,7 +610,8 @@ const BookingInterface: React.FC<BookingInterfaceProps> = ({
                   value={customerInfo.email}
                   onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
                   placeholder="Add..."
-                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b border-gray-300 focus:outline-none focus:border-gray-600 focus:ring-0 placeholder-gray-400"
+                  className="w-full px-0 py-3 text-gray-900 bg-transparent border-0 border-b focus:outline-none focus:ring-0 placeholder-gray-400"
+                  style={{ borderBottomColor: customerInfo.email ? config.primaryColor : `${config.primaryColor}80` }}
                   required
                 />
                 <p className="text-xs mt-1" style={{ color: config.primaryColor, opacity: 0.8 }}>

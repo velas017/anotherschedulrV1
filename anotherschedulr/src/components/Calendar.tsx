@@ -325,7 +325,7 @@ const Calendar: React.FC<CalendarProps> = ({
                       }
                     `}
                     style={{
-                      color: (isPastDate(day) || isClosedDate(day)) ? '#ccc' : 
+                      color: (isPastDate(day) || isClosedDate(day)) ? '#9ca3af' : 
                              (isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? 'white' : 
                              primaryColor,
                       backgroundColor: (isToday(day) && !isPastDate(day) && !isClosedDate(day)) ? primaryColor : 

@@ -665,7 +665,7 @@ const SchedulingPageBuilder: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 p-6 text-center mt-8">
+            <div className="border-t p-6 text-center mt-8" style={{ borderTopColor: primaryColor }}>
               <div className="text-xs text-gray-500 mb-1">
                 Powered by
               </div>
