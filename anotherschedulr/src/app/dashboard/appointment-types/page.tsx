@@ -11,7 +11,8 @@ import {
   Edit,
   Copy,
   HelpCircle,
-  MoreVertical
+  MoreVertical,
+  ArrowUpDown
 } from 'lucide-react';
 import NewServiceModal from '@/components/newServiceModal';
 
@@ -40,44 +41,92 @@ interface ServiceCategory {
   services: Service[];
 }
 
+interface AddOn {
+  id: string;
+  name: string;
+  description?: string;
+  duration: number;
+  price: number;
+  isAdminOnly: boolean;
+  isVisible: boolean;
+  sortOrder: number;
+  associatedServicesCount: number;
+  associatedServices: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
 const AppointmentTypesPage = () => {
   const router = useRouter();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [addOns, setAddOns] = useState<AddOn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isNewServiceModalOpen, setIsNewServiceModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [activeTab, setActiveTab] = useState<'types' | 'addons' | 'coupons'>('types');
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<'name' | 'duration' | 'price'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Fetch services and categories
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Fetch data when tab changes
+  useEffect(() => {
+    if (activeTab === 'addons') {
+      fetchAddOns();
+    }
+  }, [activeTab]);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [servicesRes, categoriesRes] = await Promise.all([
-        fetch('/api/services'),
-        fetch('/api/service-categories')
-      ]);
+      
+      if (activeTab === 'types') {
+        const [servicesRes, categoriesRes] = await Promise.all([
+          fetch('/api/services'),
+          fetch('/api/service-categories')
+        ]);
 
-      if (servicesRes.ok) {
-        const servicesData = await servicesRes.json();
-        setServices(servicesData);
-      }
+        if (servicesRes.ok) {
+          const servicesData = await servicesRes.json();
+          setServices(servicesData);
+        }
 
-      if (categoriesRes.ok) {
-        const categoriesData = await categoriesRes.json();
-        setCategories(categoriesData);
-        // Expand all categories by default
-        setExpandedCategories(new Set(categoriesData.map((cat: ServiceCategory) => cat.id)));
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData);
+          // Expand all categories by default
+          setExpandedCategories(new Set(categoriesData.map((cat: ServiceCategory) => cat.id)));
+        }
+      } else if (activeTab === 'addons') {
+        const addOnsRes = await fetch('/api/addons');
+        if (addOnsRes.ok) {
+          const addOnsData = await addOnsRes.json();
+          setAddOns(addOnsData);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchAddOns = async () => {
+    try {
+      const addOnsRes = await fetch('/api/addons');
+      if (addOnsRes.ok) {
+        const addOnsData = await addOnsRes.json();
+        setAddOns(addOnsData);
+      }
+    } catch (error) {
+      console.error('Error fetching add-ons:', error);
     }
   };
 
@@ -137,6 +186,101 @@ const AppointmentTypesPage = () => {
     return `(${parts.join(' ')})`;
   };
 
+  // Add-on management functions
+  const handleSelectAllAddOns = () => {
+    if (selectedAddOns.length === addOns.length) {
+      setSelectedAddOns([]);
+    } else {
+      setSelectedAddOns(addOns.map(addOn => addOn.id));
+    }
+  };
+
+  const handleSelectAddOn = (addOnId: string) => {
+    if (selectedAddOns.includes(addOnId)) {
+      setSelectedAddOns(selectedAddOns.filter(id => id !== addOnId));
+    } else {
+      setSelectedAddOns([...selectedAddOns, addOnId]);
+    }
+  };
+
+  const handleSort = (field: 'name' | 'duration' | 'price') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedAddOns = () => {
+    const sorted = [...addOns].sort((a, b) => {
+      let aValue: string | number = a[sortField];
+      let bValue: string | number = b[sortField];
+      
+      if (sortField === 'name') {
+        aValue = aValue.toString().toLowerCase();
+        bValue = bValue.toString().toLowerCase();
+      }
+      
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+    
+    return sorted;
+  };
+
+  const handleEditAddOn = (addOn: AddOn) => {
+    // TODO: Open edit modal
+    console.log('Edit add-on:', addOn);
+  };
+
+  const handleDuplicateAddOn = async (addOn: AddOn) => {
+    try {
+      const duplicatedAddOn = {
+        ...addOn,
+        name: `${addOn.name} (Copy)`,
+        id: undefined
+      };
+      
+      const response = await fetch('/api/addons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(duplicatedAddOn)
+      });
+
+      if (response.ok) {
+        fetchAddOns(); // Refresh the data
+      }
+    } catch (error) {
+      console.error('Error duplicating add-on:', error);
+    }
+  };
+
+  const handleDeleteAddOn = async (addOnId: string) => {
+    if (!confirm('Are you sure you want to delete this add-on?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/addons/${addOnId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        fetchAddOns(); // Refresh the data
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete add-on');
+      }
+    } catch (error) {
+      console.error('Error deleting add-on:', error);
+      alert('Failed to delete add-on');
+    }
+  };
+
   // Group services by category
   const getCategoriesWithServices = () => {
     const categoriesMap = new Map<string, ServiceCategory & { services: Service[] }>();
@@ -178,17 +322,157 @@ const AppointmentTypesPage = () => {
   };
 
   const renderContent = () => {
-    if (activeTab !== 'types') {
+    // Handle Add-ons tab
+    if (activeTab === 'addons') {
+      const sortedAddOns = getSortedAddOns();
+      const hasAddOns = addOns.length > 0;
+
+      if (!hasAddOns) {
+        return (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Plus className="w-8 h-8 text-gray-400" />
+                </div>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No add-ons yet</h3>
+              <p className="text-gray-500 mb-6 max-w-md">
+                Add-ons are extras customers can select while scheduling their appointment or class.
+              </p>
+              <button
+                onClick={() => {/* TODO: Open create add-on modal */}}
+                className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
+              >
+                CREATE ADD-ON
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex-1 p-6">
+          <div className="mb-6">
+            <p className="text-sm text-gray-600">
+              Add-ons are extras customers can select while scheduling their appointment or class.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="w-12 px-6 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedAddOns.length === addOns.length && addOns.length > 0}
+                      onChange={handleSelectAllAddOns}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('name')}
+                      className="flex items-center space-x-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
+                    >
+                      <span>Name</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('duration')}
+                      className="flex items-center space-x-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
+                    >
+                      <span>Duration</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('price')}
+                      className="flex items-center space-x-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700"
+                    >
+                      <span>Price</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Admin-only
+                  </th>
+                  <th className="w-12 px-6 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedAddOns.map((addOn) => (
+                  <tr key={addOn.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedAddOns.includes(addOn.id)}
+                        onChange={() => handleSelectAddOn(addOn.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 underline cursor-pointer">
+                          {addOn.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {addOn.associatedServicesCount} appointment types
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {addOn.duration === 0 ? '0 minutes' : formatDuration(addOn.duration)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      ${addOn.price.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 text-center text-sm text-gray-500">
+                      {addOn.isAdminOnly ? '—' : '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="relative">
+                        <button 
+                          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                          onClick={() => {
+                            // TODO: Implement dropdown menu
+                            const action = prompt('Choose action: edit, duplicate, delete');
+                            if (action === 'edit') handleEditAddOn(addOn);
+                            else if (action === 'duplicate') handleDuplicateAddOn(addOn);
+                            else if (action === 'delete') handleDeleteAddOn(addOn.id);
+                          }}
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    // Handle Coupons tab
+    if (activeTab === 'coupons') {
       return (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-500 mb-4">
-              {activeTab === 'addons' ? 'Add-ons' : 'Coupons'} feature coming soon
+              Coupons feature coming soon
             </p>
           </div>
         </div>
       );
     }
+
+    // Handle Types tab (existing functionality)
 
     const categoriesWithServices = getCategoriesWithServices();
     const hasServices = services.length > 0;
@@ -365,6 +649,16 @@ const AppointmentTypesPage = () => {
               className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
             >
               NEW TYPE OF SERVICE
+            </button>
+          </div>
+        )}
+        {activeTab === 'addons' && addOns.length > 0 && (
+          <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <button
+              onClick={() => {/* TODO: Open create add-on modal */}}
+              className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
+            >
+              CREATE ADD-ON
             </button>
           </div>
         )}

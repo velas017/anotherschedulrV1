@@ -157,6 +157,37 @@ export const appointmentSchema = z.object({
   serviceId: z.string().uuid('Invalid service ID').optional().nullable(),
 });
 
+// Add-on schema
+export const addOnSchema = z.object({
+  name: z.string()
+    .min(1, 'Add-on name is required')
+    .max(200, 'Add-on name must be less than 200 characters')
+    .transform(sanitizeHtml),
+  description: z.string()
+    .max(1000, 'Description must be less than 1000 characters')
+    .optional()
+    .transform(val => val ? sanitizeHtml(val) : val)
+    .nullable(),
+  duration: z.number()
+    .int()
+    .min(0, 'Duration cannot be negative')
+    .max(480, 'Duration must be less than 8 hours'),
+  price: z.number()
+    .min(0, 'Price cannot be negative')
+    .max(999999, 'Price is too high'),
+  isAdminOnly: z.boolean().optional(),
+  isVisible: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(9999).optional(),
+});
+
+// Service add-on association schema
+export const serviceAddOnSchema = z.object({
+  serviceIds: z.array(z.string().uuid('Invalid service ID'))
+    .min(1, 'At least one service must be selected')
+    .max(50, 'Too many services selected'),
+  isRequired: z.boolean().optional(),
+});
+
 // Generic ID parameter validation
 export const idParamSchema = z.object({
   id: z.string().uuid('Invalid ID format'),
