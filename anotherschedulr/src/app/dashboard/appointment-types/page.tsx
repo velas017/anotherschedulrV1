@@ -15,6 +15,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import NewServiceModal from '@/components/newServiceModal';
+import AddOnDrawer from '@/components/AddOnDrawer';
 
 interface Service {
   id: string;
@@ -70,6 +71,7 @@ const AppointmentTypesPage = () => {
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [sortField, setSortField] = useState<'name' | 'duration' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isAddOnDrawerOpen, setIsAddOnDrawerOpen] = useState(false);
 
   // Fetch services and categories
   useEffect(() => {
@@ -341,7 +343,7 @@ const AppointmentTypesPage = () => {
                 Add-ons are extras customers can select while scheduling their appointment or class.
               </p>
               <button
-                onClick={() => {/* TODO: Open create add-on modal */}}
+                onClick={() => setIsAddOnDrawerOpen(true)}
                 className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
               >
                 CREATE ADD-ON
@@ -352,16 +354,17 @@ const AppointmentTypesPage = () => {
       }
 
       return (
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 flex flex-col" style={{ maxHeight: 'calc(100vh - 60px)' }}>
           <div className="mb-6">
             <p className="text-sm text-gray-600">
               Add-ons are extras customers can select while scheduling their appointment or class.
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col" style={{ maxHeight: 'calc(100vh - 168px)' }}>
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="w-12 px-6 py-3">
                     <input
@@ -454,6 +457,7 @@ const AppointmentTypesPage = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       );
@@ -640,7 +644,7 @@ const AppointmentTypesPage = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col bg-gray-50 h-screen overflow-hidden">
         {/* Action Bar */}
         {activeTab === 'types' && services.length > 0 && (
           <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -655,7 +659,7 @@ const AppointmentTypesPage = () => {
         {activeTab === 'addons' && addOns.length > 0 && (
           <div className="bg-white border-b border-gray-200 px-6 py-4">
             <button
-              onClick={() => {/* TODO: Open create add-on modal */}}
+              onClick={() => setIsAddOnDrawerOpen(true)}
               className="px-4 py-2 bg-black text-white text-sm font-medium rounded hover:bg-gray-800 transition-colors"
             >
               CREATE ADD-ON
@@ -693,6 +697,16 @@ const AppointmentTypesPage = () => {
           }}
         />
       )}
+
+      {/* Add-On Drawer */}
+      <AddOnDrawer
+        isOpen={isAddOnDrawerOpen}
+        onClose={() => setIsAddOnDrawerOpen(false)}
+        onSuccess={() => {
+          fetchAddOns();
+          console.log('✅ Add-on created successfully - refreshing list');
+        }}
+      />
     </div>
   );
 };
